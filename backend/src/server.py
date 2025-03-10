@@ -1,24 +1,48 @@
-from flask import Flask, jsonify, request
-import subprocess
-import psutil
 import os
-import signal
-from firebase_admin import credentials, firestore, initialize_app
-import bcrypt
-import firebase_admin
-from firebase_admin import auth
+import logging
+import wave
+import numpy as np
+from datetime import datetime
+from pytz import timezone
+from flask import Flask, jsonify, request
 from flask_cors import CORS
+from firebase_admin import credentials, firestore, initialize_app, auth
+import firebase_admin
+import bcrypt
+import psutil
+import signal
+import subprocess
+import werkzeug
+
+# pydub for M4A -> WAV conversion:
+from pydub import AudioSegment
+
+# BirdNET
+from birdnetlib import Recording
+from birdnetlib.analyzer import Analyzer
+
+# ======================
+#  GLOBALS
+# ======================
+NOISE_FLOOR_THRESHOLD = 1e6
+ALPHA = 0.9
 
 app = Flask(__name__)
 CORS(app)
 
+# Initialize Firebase
 cred = credentials.Certificate(os.path.join(os.getcwd(), "backend/secrets/firebase-admin-key.json"))
-initialize_app(cred)
+firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-is_running = False
-process = None  
+# BirdNET init
+analyzer = Analyzer()
+analyzer.verbose = False
+logging.getLogger("birdnetlib").setLevel(logging.ERROR)
 
+# ======================
+#  HELPER FUNCTIONS
+# ======================
 def terminate_process_and_children(proc_pid):
     try:
         parent = psutil.Process(proc_pid)
@@ -28,44 +52,95 @@ def terminate_process_and_children(proc_pid):
     except psutil.NoSuchProcess:
         pass
 
+def adjust_floor(current_thresh, observed_power, alpha=0.9):
+    """
+    Blends the current threshold with the observed power to adapt the noise floor.
+    If you only want to lower the threshold when it's quieter, call this conditionally.
+    """
+    return alpha * current_thresh + (1 - alpha) * observed_power
 
-# Bird Detection Endpoints
-@app.route('/start-detection', methods=['POST'])
-def start_detection():
-    global is_running, process
-    if not is_running:
-        try:
-            process = subprocess.Popen(["python", "detect_birds.py"])
-            is_running = True
-            return jsonify({"message": "Bird detection started"})
-        except Exception as e:
-            return jsonify({"message": f"Error starting detection: {str(e)}"}), 500
+# ======================
+#  MAIN UPLOAD ENDPOINT
+# ======================
+@app.route('/upload', methods=['POST'])
+def upload():
+    global NOISE_FLOOR_THRESHOLD, ALPHA
+
+    if 'file' not in request.files:
+        return jsonify({"error": "No file found"}), 400
+
+    uploaded_file = request.files['file']
+    raw_filename = "incoming.m4a"
+    uploaded_file.save(raw_filename)
+
+    # Convert M4A -> WAV
+    wav_filename = "temp.wav"
+    try:
+        # If phone produces MP4 containers, use format="mp4" instead of "m4a"
+        audio_data = AudioSegment.from_file(raw_filename, format="m4a")
+        audio_data.export(wav_filename, format="wav")
+    except Exception as e:
+        print("Error converting to WAV:", e)
+        if os.path.exists(raw_filename):
+            os.remove(raw_filename)
+        return jsonify({"error": "Failed to convert M4A to WAV"}), 500
+
+    # Remove the original M4A
+    os.remove(raw_filename)
+
+    # If you want lat/lon from the phone, do:
+    # lat = float(request.form.get('latitude', 0))
+    # lon = float(request.form.get('longitude', 0))
+    lat = 0.0
+    lon = 0.0
+
+    # Noise-floor check
+    with wave.open(wav_filename, 'rb') as wf:
+        frames = wf.readframes(wf.getnframes())
+        audio_data_np = np.frombuffer(frames, dtype=np.int16)
+
+    fft_data = np.fft.fft(audio_data_np)
+    power_spectrum = np.abs(fft_data) ** 2
+    max_power = np.max(power_spectrum)
+
+    # If the chunk is below our noise floor threshold, skip BirdNET
+    if max_power < NOISE_FLOOR_THRESHOLD:
+        NOISE_FLOOR_THRESHOLD = adjust_floor(NOISE_FLOOR_THRESHOLD, max_power, ALPHA)
+        os.remove(wav_filename)
+        return jsonify({
+            "message": "Below noise threshold, skipping BirdNET",
+            "birds": []
+        })
     else:
-        return jsonify({"message": "Bird detection is already running"}), 400
+        # If you want to also adapt upward, do:
+        # NOISE_FLOOR_THRESHOLD = adjust_floor(NOISE_FLOOR_THRESHOLD, max_power, ALPHA)
 
+        # Run BirdNET
+        recording = Recording(analyzer, wav_filename, lat=lat, lon=lon, date=datetime.now(), min_conf=0.25)
+        recording.analyze()
+        birds = list({item['common_name'] for item in recording.detections})
 
-@app.route('/stop-detection', methods=['POST'])
-def stop_detection():
-    global is_running, process
-    if is_running and process:
-        try:
-            terminate_process_and_children(process.pid)
-            process = None
-            is_running = False
-            return jsonify({"message": "Bird detection stopped"})
-        except Exception as e:
-            return jsonify({"message": f"Error stopping detection: {str(e)}"}), 500
-    else:
-        return jsonify({"message": "Bird detection is not running"}), 400
+        # Store to Firestore
+        eastern = timezone('US/Eastern')
+        current_time = datetime.now().astimezone(eastern)
+        for bird in birds:
+            db.collection("birds").add({
+                "bird": bird,
+                "latitude": lat,
+                "longitude": lon,
+                "timestamp": current_time
+            })
 
+        os.remove(wav_filename)
+        return jsonify({
+            "message": "File processed successfully",
+            "birds": birds
+        })
 
-@app.route('/status', methods=['GET'])
-def status():
-    global is_running
-    return jsonify({"running": is_running})
+# ======================
+#  OTHER ENDPOINTS
+# ======================
 
-
-# Login, Register and Logout Endpoints
 @app.route('/register', methods=['POST'])
 def register():
     """Register a new user."""
@@ -81,12 +156,10 @@ def register():
             if existing_user:
                 return jsonify({"error": "This email is already in use."}), 400
         except firebase_admin.auth.UserNotFoundError:
-            pass  
+            pass
 
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
         user = auth.create_user(email=email, password=password)
-
         user_data = {
             "firstName": first_name,
             "lastName": last_name,
@@ -176,7 +249,6 @@ def login():
         return jsonify({"error": f"Error logging in: {str(e)}"}), 500
 
 
-# User Endpoints
 @app.route('/users', methods=['POST'])
 def add_user():
     """Add a new user."""
@@ -215,7 +287,6 @@ def update_user_preferences(user_id):
         return jsonify({"error": f"Error updating preferences: {str(e)}"}), 500
 
 
-# Chat Endpoints
 @app.route('/chats/<user_id>', methods=['GET'])
 def get_user_chats(user_id):
     """Fetch all chats for a user."""
