@@ -9,3 +9,6 @@ birdnet-env/
 backend/secrets/
 .expo/devices.json
 .expo/settings.json
+.env
+database/firebaseConfig.js
+
