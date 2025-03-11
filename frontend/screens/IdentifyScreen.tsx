@@ -215,6 +215,171 @@ interface BirdInfo {
     setIsDetecting((prev) => !prev);
   };
 
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.statusContainer}>
+          <Card style={styles.badge}>
+            <Text style={styles.badgeDate}></Text>
+            <Text style={styles.badgeText}>{detectionStatus}</Text>
+            <Text style={styles.badgeDate}></Text>
+          </Card>
+          <TouchableOpacity style={styles.listeningButton} onPress={toggleDetection}>
+            <MaterialCommunityIcons
+              name={isDetecting ? "microphone" : "microphone-off"}
+              size={36}
+              color={colors.card}
+            />
+          </TouchableOpacity>
+          <Card style={styles.badge}>
+            <Text style={styles.badgeText}>Bird Last Identified On</Text>
+            <Text style={styles.badgeDate}>
+              {latestBird ? latestBird.timestamp.toLocaleString() : "No bird detected yet"}
+            </Text>
+          </Card>
+        </View>
+  
+        <Text style={styles.speciesName}>
+          {latestBird ? latestBird.bird : "No Bird Found Yet"}
+        </Text>
+        <Text style={styles.speciesLatin}>
+          {birdInfo?.scientific_name || ""}
+        </Text>
+  
+        <View style={styles.robinContainer}>
+          {loading ? (
+            <ActivityIndicator size="large" color={colors.primary} />
+          ) : birdImage ? (
+            <Image source={{ uri: birdImage }} style={styles.robinImage} />
+          ) : (
+            <Text style={styles.sectionText}>No image available.</Text>
+          )}
+        </View>
+        {/* Additional UI components for bird details */}
+      </ScrollView>
+    </SafeAreaView>
+  );
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContainer: {
+      padding: 20,
+    },
+    migrationImage: {
+      width: 300,
+      height: 200,
+      resizeMode: 'contain',
+      marginTop: 10,
+    },
+    statusContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 20,
+    },
+    badge: {
+      width: "35%",
+      height: 110,
+      justifyContent: "center",
+      shadowRadius: 0,
+      elevation: 3,
+      padding: 0,
+    },
+    badgeText: {
+      fontFamily: "Caprasimo",
+      fontSize: 16,
+      color: colors.primary,
+      textAlign: "center",
+    },
+    badgeDate: {
+      fontFamily: "Radio Canada",
+      fontSize: 12,
+      color: colors.text,
+      textAlign: "center",
+    },
+    listeningButton: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: colors.accent,
+      justifyContent: "center",
+      alignItems: "center",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 5,
+    },
+    speciesName: {
+      fontFamily: "Caprasimo",
+      fontSize: 36,
+      color: colors.secondary,
+      textAlign: "center",
+      marginBottom: 5,
+    },
+    speciesLatin: {
+      fontFamily: "Radio Canada Italic",
+      fontSize: 20,
+      color: colors.text,
+      textAlign: "center",
+      fontWeight: "bold",
+      marginBottom: 20,
+    },
+    robinContainer: {
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 20,
+    },
+    robinImage: {
+      width: 350,
+      height: 250,
+      borderRadius: 20,
+      borderWidth: 5,
+      borderColor: colors.primary,
+      shadowColor: colors.black,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+    },
+    sectionText: {
+      fontFamily: "Radio Canada",
+      fontSize: 16,
+      color: colors.text,
+      textAlign: "left",
+      lineHeight: 24,
+    },
+    sectionHeading: {
+      fontFamily: "Caprasimo",
+      fontSize: 28,
+      color: colors.secondary,
+      textAlign: "center",
+      marginBottom: 10,
+    },
+    separator: {
+      height: 2,
+      backgroundColor: colors.accent,
+      marginVertical: 10,
+    },
+    combinedContainer: {
+      marginTop: 10,
+    },
+    iconRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 5,
+    },
+    iconText: {
+      fontFamily: "Radio Canada",
+      fontSize: 16,
+      color: colors.text,
+      marginLeft: 5,
+      lineHeight: 20,
+    },
+  });
   
 
 export default IdentifyScreen;
