@@ -398,6 +398,19 @@ interface BirdInfo {
       <Text style={styles.sectionText}>No migration map available.</Text>
     )}
   </View>
+  
+<View>
+  <Text style={styles.sectionHeading}>Feeding Behavior</Text>
+  <Text style={styles.sectionText}>
+    {birdInfo?.feeding_behavior || "No feeding info available."}
+  </Text>
+</View>
+<View style={styles.separator} />
+<View>
+  <Text style={styles.sectionHeading}>Diet</Text>
+  <Text style={styles.sectionText}>
+    {birdInfo?.diet || "No diet info available."}
+  </Text>
 </View>
 
 
