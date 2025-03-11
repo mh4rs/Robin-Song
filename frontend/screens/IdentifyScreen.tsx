@@ -7,6 +7,9 @@ import axios from "axios";
 import colors from "frontend/assets/theme/colors";
 import Card from "../components/Card";
 import Constants from 'expo-constants';
+import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
+import * as Location from 'expo-location';
+
 
 // Unsplash API Key; access key from environment variables
 const UNSPLASH_ACCESS_KEY =
@@ -21,7 +24,10 @@ interface BirdData {
   longitude: number;
   timestamp: Date;
 }
-
+interface UploadResponse {
+  birds: string[];
+  message: string;
+}
 const IdentifyScreen: React.FC = () => {
   const [latestBird, setLatestBird] = useState<BirdData | null>(null);
   const [birdImage, setBirdImage] = useState<string | null>(null);
@@ -29,74 +35,59 @@ const IdentifyScreen: React.FC = () => {
   const [isDetecting, setIsDetecting] = useState(false);
   const [detectionStatus, setDetectionStatus] = useState("Not Identifying Birds");
 
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const recordingRef = useRef<Audio.Recording | null>(null);
+
+  // Fetch the user's last detection from Firestore on mount
   useEffect(() => {
-    // Fetch the latest bird data
-    const birdsCollection = collection(db, "birds");
-    const q = query(birdsCollection, orderBy("timestamp", "desc"), limit(1));
-
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      if (!snapshot.empty) {
-        const doc = snapshot.docs[0];
-        const birdData: BirdData = {
-          bird: doc.data().bird,
-          latitude: doc.data().latitude,
-          longitude: doc.data().longitude,
-          timestamp: doc.data().timestamp.toDate(),
-        };
-        setLatestBird(birdData);
-
-        // Fetch bird image
-        await fetchBirdImage(birdData.bird);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  const fetchBirdImage = async (birdName: string) => {
-  setLoading(true);
-  try {
-    console.log('Fetching bird image with API Key:', UNSPLASH_ACCESS_KEY);
-
-  
-    const response = await axios.get<{
-      results: { urls: { small: string } }[];
-    }>("https://api.unsplash.com/search/photos", {
-      params: {
-        query: birdName,
-        per_page: 1,
-      },
-      headers: {
-        Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`,
-      },
-    });
-      const images = response.data.results;
-      setBirdImage(images.length > 0 ? images[0].urls.small : null);
-    } catch (error) {
-      console.error("Error fetching bird image:", error);
-      setBirdImage(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-    // Toggle detection state and trigger backend
-    const toggleDetection = async () => {
+    const fetchLastBird = async () => {
       try {
-        setIsDetecting((prev) => !prev);
-        if (!isDetecting) {
-          setDetectionStatus("Identifying Birds");
-          // Start detection
-          await axios.post("http://127.0.0.1:5000/start-detection");
-        } else {
-          setDetectionStatus("Not Identifying Birds");
-          // Stop detection
-          await axios.post("http://127.0.0.1:5000/stop-detection");
+        const birdsRef = collection(db, "birds");
+        const q = query(birdsRef, orderBy("timestamp", "desc"), limit(1));
+        const querySnap = await getDocs(q);
+        if (!querySnap.empty) {
+          const doc = querySnap.docs[0];
+          const data = doc.data();
+          const docTimestamp = data.timestamp ? data.timestamp.toDate() : new Date();
+          setLatestBird({
+            bird: data.bird,
+            latitude: data.latitude || 0,
+            longitude: data.longitude || 0,
+            timestamp: docTimestamp,
+          });
+          await fetchBirdImage(data.bird);
         }
-      } catch (error) {
-        console.error("Error toggling detection:", error);
+      } catch (err) {
+        console.error("Error fetching last bird from Firestore:", err);
       }
     };
+    fetchLastBird();
+  }, []);
+
+  // Get device location once on mount
+  useEffect(() => {
+    const fetchInitialLocation = async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert("Permission required", "Enable location access for detection logs.");
+          return;
+        }
+        let loc = await Location.getCurrentPositionAsync({});
+        if (loc && loc.coords) {
+          setLatitude(loc.coords.latitude);
+          setLongitude(loc.coords.longitude);
+        }
+      } catch (err) {
+        console.error("Error fetching location:", err);
+      }
+    };
+    fetchInitialLocation();
+  }, []);
+
+  
+
 
   return (
     <SafeAreaView style={styles.container}>
