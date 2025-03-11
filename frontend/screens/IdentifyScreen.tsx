@@ -119,4 +119,67 @@ interface BirdInfo {
     }
   };
 
+  const startRecording = async () => {
+    try {
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission required", "Enable microphone access in settings.");
+        return;
+      }
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+        shouldDuckAndroid: true,
+        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+      });
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      recordingRef.current = recording;
+    } catch (error) {
+      console.error("Error starting recording:", error);
+    }
+  };
+  
+  const stopRecordingAndUpload = async () => {
+    if (!recordingRef.current) return;
+    try {
+      await recordingRef.current.stopAndUnloadAsync();
+      const uri = recordingRef.current.getURI();
+      if (uri) {
+        const formData = new FormData();
+        formData.append("file", {
+          uri,
+          name: "recording.wav",
+          type: "audio/wav",
+        } as any);
+        formData.append("latitude", String(latitude ?? 0));
+        formData.append("longitude", String(longitude ?? 0));
+        const response = await axios.post<UploadResponse>(
+          "http://192.168.1.108:5000/upload",
+          formData,
+          { headers: { "Content-Type": "multipart/form-data" } }
+        );
+        if (isDetecting && response.data.birds?.length) {
+          for (const bird of response.data.birds) {
+            console.log(`Detected: ${bird}`);
+            setLatestBird({
+              bird,
+              latitude: latitude ?? 0,
+              longitude: longitude ?? 0,
+              timestamp: new Date(),
+            });
+            await fetchBirdInfo(bird);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error uploading audio:", error);
+    } finally {
+      recordingRef.current = null;
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+    }
+  };
+
 export default IdentifyScreen;
