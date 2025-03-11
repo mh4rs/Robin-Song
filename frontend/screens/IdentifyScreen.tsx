@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaView, View,  Text, StyleSheet, Image, ScrollView, ActivityIndicator, TouchableOpacity} from "react-native";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { db } from "../../database/firebaseConfig";
 import axios from "axios";
 import colors from "frontend/assets/theme/colors";
 import Card from "../components/Card";
 import Constants from 'expo-constants';
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
+import { Alert } from 'react-native';
 import * as Location from 'expo-location';
 
 
