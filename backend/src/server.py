@@ -61,6 +61,7 @@ def upload():
     uploaded_file = request.files['file']
     raw_filename = "incoming.m4a"
     uploaded_file.save(raw_filename)
+
     wav_filename = "temp.wav"
     try:
         audio_data = AudioSegment.from_file(raw_filename, format="m4a")
@@ -75,15 +76,44 @@ def upload():
     lat = 0.0
     lon = 0.0
 
+    # Noise-floor check
+    with wave.open(wav_filename, 'rb') as wf:
+        frames = wf.readframes(wf.getnframes())
+        audio_data_np = np.frombuffer(frames, dtype=np.int16)
+
+    fft_data = np.fft.fft(audio_data_np)
+    power_spectrum = np.abs(fft_data) ** 2
+    max_power = np.max(power_spectrum)
+
+    if max_power < NOISE_FLOOR_THRESHOLD:
+        NOISE_FLOOR_THRESHOLD = adjust_floor(NOISE_FLOOR_THRESHOLD, max_power, ALPHA)
+        os.remove(wav_filename)
+        return jsonify({
+            "message": "Below noise threshold, skipping BirdNET",
+            "birds": []
+        })
+    else:
     
+        recording = Recording(analyzer, wav_filename, lat=lat, lon=lon, date=datetime.now(), min_conf=0.25)
+        recording.analyze()
+        birds = list({item['common_name'] for item in recording.detections})
 
+        # Store to Firestore
+        eastern = timezone('US/Eastern')
+        current_time = datetime.now().astimezone(eastern)
+        for bird in birds:
+            db.collection("birds").add({
+                "bird": bird,
+                "latitude": lat,
+                "longitude": lon,
+                "timestamp": current_time
+            })
 
-
-
-
-
-
-
+        os.remove(wav_filename)
+        return jsonify({
+            "message": "File processed successfully",
+            "birds": birds
+        })
 
 @app.route('/register', methods=['POST'])
 def register():
