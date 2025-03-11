@@ -104,7 +104,6 @@ const IdentifyScreen: React.FC = () => {
     }
   };
 
-  // Start recording
   const startRecording = async () => {
     try {
       const { status } = await Audio.requestPermissionsAsync();
@@ -129,7 +128,6 @@ const IdentifyScreen: React.FC = () => {
     }
   };
 
-  // Stop recording and upload
   const stopRecordingAndUpload = async () => {
     if (!recordingRef.current) return;
     try {
@@ -173,6 +171,41 @@ const IdentifyScreen: React.FC = () => {
       await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
     }
   };
+
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
+    const startDetectionCycle = async () => {
+      console.log("Detection started.");
+      setDetectionStatus("Identifying Birds");
+      await startRecording();
+      intervalId = setInterval(async () => {
+        if (!isDetecting) return;
+        await stopRecordingAndUpload();
+        if (isDetecting) {
+          await startRecording();
+        }
+      }, 3000);
+    };
+    if (isDetecting) {
+      startDetectionCycle();
+    } else {
+      console.log("Detection stopped.");
+      setDetectionStatus("Not Identifying Birds");
+      if (intervalId) clearInterval(intervalId);
+      stopRecordingAndUpload();
+      setLatestBird(null);
+      setBirdImage(null);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [isDetecting]);
+
+  // Toggle detection state
+  const toggleDetection = () => {
+    setIsDetecting((prev) => !prev);
+  };
+
 
   return (
     <SafeAreaView style={styles.container}>
