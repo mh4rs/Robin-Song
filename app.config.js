@@ -13,7 +13,7 @@ module.exports = {
       },
       ios: {
         bundleIdentifier: "com.robinsong.robinsong",
-        googleServicesFile: process.env.GOOGLE_SERVICES_INFO || 'C:\\Users\\joven\\OneDrive\\Desktop\\woman in stem\\uni\\year 4\\Robin-Song\\google-services\\GoogleService-Info.plist',
+        googleServicesFile: process.env.GOOGLE_SERVICES_INFO || '/Users/meriam/Robin-Song/google-services/GoogleService-Info.plist',
         infoPlist: {
           ITSAppUsesNonExemptEncryption: false
         }

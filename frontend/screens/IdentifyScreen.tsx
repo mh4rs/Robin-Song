@@ -164,7 +164,7 @@ const IdentifyScreen: React.FC = () => {
         formData.append("latitude", String(latitude ?? 0));
         formData.append("longitude", String(longitude ?? 0));
         const response = await axios.post<UploadResponse>(
-          'http://192.168.1.108:5000/upload',
+          'http://10.0.0.4:5000/upload',
           formData,
           { headers: { 'Content-Type': 'multipart/form-data' } }
         );

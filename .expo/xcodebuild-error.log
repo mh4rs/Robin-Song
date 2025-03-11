@@ -1,0 +1,6 @@
+2025-03-09 12:12:13.369 xcodebuild[45696:1249331] Writing error result bundle to /var/folders/kp/xpy8nqsx2mz8dxhg5j0bfg080000gn/T/ResultBundle_2025-09-03_12-12-0013.xcresult
+xcodebuild: error: Unable to find a destination matching the provided destination specifier:
+		{ id:E4F6FDC8-BC73-4AF5-9512-C32D58CCAFC4 }
+
+	Ineligible destinations for the "robinsong" scheme:
+		{ platform:iOS, id:dvtdevice-DVTiPhonePlaceholder-iphoneos:placeholder, name:Any iOS Device, error:iOS 18.2 is not installed. To use with Xcode, first download and install the platform }

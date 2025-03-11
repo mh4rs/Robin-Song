@@ -1,0 +1,6 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -workspace /Users/meriam/Robin-Song/ios/robinsong.xcworkspace -configuration Debug -scheme robinsong -destination id=E4F6FDC8-BC73-4AF5-9512-C32D58CCAFC4
+
+User defaults from command line:
+    IDEPackageSupportUseBuiltinSCM = YES
+
