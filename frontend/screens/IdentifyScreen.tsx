@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaView, View,  Text, StyleSheet, Image, ScrollView, ActivityIndicator, TouchableOpacity} from "react-native";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { db } from "../../database/firebaseConfig";
 import axios from "axios";
 import colors from "frontend/assets/theme/colors";
 import Card from "../components/Card";
 import Constants from 'expo-constants';
+import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
+import { Alert } from 'react-native';
+import * as Location from 'expo-location';
+
 
 // Unsplash API Key; access key from environment variables
 const UNSPLASH_ACCESS_KEY =
@@ -21,7 +25,10 @@ interface BirdData {
   longitude: number;
   timestamp: Date;
 }
-
+interface UploadResponse {
+  birds: string[];
+  message: string;
+}
 const IdentifyScreen: React.FC = () => {
   const [latestBird, setLatestBird] = useState<BirdData | null>(null);
   const [birdImage, setBirdImage] = useState<string | null>(null);
@@ -29,74 +36,177 @@ const IdentifyScreen: React.FC = () => {
   const [isDetecting, setIsDetecting] = useState(false);
   const [detectionStatus, setDetectionStatus] = useState("Not Identifying Birds");
 
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const recordingRef = useRef<Audio.Recording | null>(null);
+
+  // Fetch the user's last detection from Firestore on mount
   useEffect(() => {
-    // Fetch the latest bird data
-    const birdsCollection = collection(db, "birds");
-    const q = query(birdsCollection, orderBy("timestamp", "desc"), limit(1));
-
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      if (!snapshot.empty) {
-        const doc = snapshot.docs[0];
-        const birdData: BirdData = {
-          bird: doc.data().bird,
-          latitude: doc.data().latitude,
-          longitude: doc.data().longitude,
-          timestamp: doc.data().timestamp.toDate(),
-        };
-        setLatestBird(birdData);
-
-        // Fetch bird image
-        await fetchBirdImage(birdData.bird);
+    const fetchLastBird = async () => {
+      try {
+        const birdsRef = collection(db, "birds");
+        const q = query(birdsRef, orderBy("timestamp", "desc"), limit(1));
+        const querySnap = await getDocs(q);
+        if (!querySnap.empty) {
+          const doc = querySnap.docs[0];
+          const data = doc.data();
+          const docTimestamp = data.timestamp ? data.timestamp.toDate() : new Date();
+          setLatestBird({
+            bird: data.bird,
+            latitude: data.latitude || 0,
+            longitude: data.longitude || 0,
+            timestamp: docTimestamp,
+          });
+          await fetchBirdImage(data.bird);
+        }
+      } catch (err) {
+        console.error("Error fetching last bird from Firestore:", err);
       }
-    });
-
-    return () => unsubscribe();
+    };
+    fetchLastBird();
   }, []);
 
-  const fetchBirdImage = async (birdName: string) => {
-  setLoading(true);
-  try {
-    console.log('Fetching bird image with API Key:', UNSPLASH_ACCESS_KEY);
+  // Get device location once on mount
+  useEffect(() => {
+    const fetchInitialLocation = async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert("Permission required", "Enable location access for detection logs.");
+          return;
+        }
+        let loc = await Location.getCurrentPositionAsync({});
+        if (loc && loc.coords) {
+          setLatitude(loc.coords.latitude);
+          setLongitude(loc.coords.longitude);
+        }
+      } catch (err) {
+        console.error("Error fetching location:", err);
+      }
+    };
+    fetchInitialLocation();
+  }, []);
 
-  
-    const response = await axios.get<{
-      results: { urls: { small: string } }[];
-    }>("https://api.unsplash.com/search/photos", {
-      params: {
-        query: birdName,
-        per_page: 1,
-      },
-      headers: {
-        Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`,
-      },
-    });
+  // Fetch bird image from Unsplash
+  const fetchBirdImage = async (birdName: string) => {
+    setLoading(true);
+    try {
+      const response = await axios.get<{
+        results: { urls: { small: string } }[];
+      }>("https://api.unsplash.com/search/photos", {
+        params: { query: birdName, per_page: 1 },
+        headers: { Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}` },
+      });
+
       const images = response.data.results;
       setBirdImage(images.length > 0 ? images[0].urls.small : null);
     } catch (error) {
-      console.error("Error fetching bird image:", error);
-      setBirdImage(null);
-    } finally {
-      setLoading(false);
+
     }
   };
 
-    // Toggle detection state and trigger backend
-    const toggleDetection = async () => {
-      try {
-        setIsDetecting((prev) => !prev);
-        if (!isDetecting) {
-          setDetectionStatus("Identifying Birds");
-          // Start detection
-          await axios.post("http://127.0.0.1:5000/start-detection");
-        } else {
-          setDetectionStatus("Not Identifying Birds");
-          // Stop detection
-          await axios.post("http://127.0.0.1:5000/stop-detection");
-        }
-      } catch (error) {
-        console.error("Error toggling detection:", error);
+  const startRecording = async () => {
+    try {
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert("Permission required", "Enable microphone access in settings.");
+        return;
       }
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+        shouldDuckAndroid: true,
+        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+      });
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      recordingRef.current = recording;
+      console.log("Recording started.");
+    } catch (error) {
+      console.error("Error starting recording:", error);
+    }
+  };
+
+  const stopRecordingAndUpload = async () => {
+    if (!recordingRef.current) return;
+    try {
+      await recordingRef.current.stopAndUnloadAsync();
+      console.log("Recording stopped.");
+      const uri = recordingRef.current.getURI();
+      if (uri) {
+        const formData = new FormData();
+        formData.append('file', {
+          uri,
+          name: 'recording.wav',
+          type: 'audio/wav',
+        } as any);
+        formData.append("latitude", String(latitude ?? 0));
+        formData.append("longitude", String(longitude ?? 0));
+        const response = await axios.post<UploadResponse>(
+          'http://192.168.1.108:5000/upload',
+          formData,
+          { headers: { 'Content-Type': 'multipart/form-data' } }
+        );
+        if (isDetecting && response.data.birds?.length) {
+          for (const bird of response.data.birds) {
+            if (!isDetecting) break;
+            console.log(`Detected: ${bird}`);
+            setLatestBird({
+              bird,
+              latitude: latitude ?? 0,
+              longitude: longitude ?? 0,
+              timestamp: new Date(),
+            });
+            await fetchBirdImage(bird);
+          }
+        }
+
+
+      }
+    } catch (error) {
+      console.error("Error uploading audio:", error);
+    } finally {
+      recordingRef.current = null;
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+    }
+  };
+
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
+    const startDetectionCycle = async () => {
+      console.log("Detection started.");
+      setDetectionStatus("Identifying Birds");
+      await startRecording();
+      intervalId = setInterval(async () => {
+        if (!isDetecting) return;
+        await stopRecordingAndUpload();
+        if (isDetecting) {
+          await startRecording();
+        }
+      }, 3000);
     };
+    if (isDetecting) {
+      startDetectionCycle();
+    } else {
+      console.log("Detection stopped.");
+      setDetectionStatus("Not Identifying Birds");
+      if (intervalId) clearInterval(intervalId);
+      stopRecordingAndUpload();
+      setLatestBird(null);
+      setBirdImage(null);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [isDetecting]);
+
+  // Toggle detection state
+  const toggleDetection = () => {
+    setIsDetecting((prev) => !prev);
+  };
+
 
   return (
     <SafeAreaView style={styles.container}>

@@ -1,14 +1,21 @@
-from flask import Flask, jsonify, request
-import subprocess
-import psutil
 import os
-import signal
-from firebase_admin import credentials, firestore, initialize_app
-import bcrypt
-import firebase_admin
-from firebase_admin import auth
+import logging
+import wave
+import numpy as np
+from datetime import datetime
+from pytz import timezone
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-import math
+from firebase_admin import credentials, firestore, initialize_app, auth
+import firebase_admin
+import bcrypt
+import psutil
+import signal
+import subprocess
+import werkzeug
+from pydub import AudioSegment
+from birdnetlib import Recording
+from birdnetlib.analyzer import Analyzer
 
 app = Flask(__name__)
 CORS(app)
@@ -20,6 +27,13 @@ cred = credentials.Certificate(
 initialize_app(cred)
 db = firestore.client()
 
+# BirdNET init
+analyzer = Analyzer()
+analyzer.verbose = False
+logging.getLogger("birdnetlib").setLevel(logging.ERROR)
+
+NOISE_FLOOR_THRESHOLD = 1e6
+ALPHA = 0.9
 is_running = False
 process = None  
 
@@ -33,40 +47,73 @@ def terminate_process_and_children(proc_pid):
     except psutil.NoSuchProcess:
         pass
 
-@app.route('/start-detection', methods=['POST'])
-def start_detection():
-    global is_running, process
-    if not is_running:
-        try:
-            process = subprocess.Popen(["python", "detect_birds.py"])
-            is_running = True
-            return jsonify({"message": "Bird detection started"})
-        except Exception as e:
-            return jsonify({"message": f"Error starting detection: {str(e)}"}), 500
+
+def adjust_floor(current_thresh, observed_power, alpha=0.9):
+    return alpha * current_thresh + (1 - alpha) * observed_power
+
+@app.route('/upload', methods=['POST'])
+def upload():
+    global NOISE_FLOOR_THRESHOLD, ALPHA
+
+    if 'file' not in request.files:
+        return jsonify({"error": "No file found"}), 400
+
+    uploaded_file = request.files['file']
+    raw_filename = "incoming.m4a"
+    uploaded_file.save(raw_filename)
+
+    wav_filename = "temp.wav"
+    try:
+        audio_data = AudioSegment.from_file(raw_filename, format="m4a")
+        audio_data.export(wav_filename, format="wav")
+    except Exception as e:
+        print("Error converting to WAV:", e)
+        if os.path.exists(raw_filename):
+            os.remove(raw_filename)
+        return jsonify({"error": "Failed to convert M4A to WAV"}), 500
+
+    os.remove(raw_filename)
+    lat = 0.0
+    lon = 0.0
+
+    # Noise-floor check
+    with wave.open(wav_filename, 'rb') as wf:
+        frames = wf.readframes(wf.getnframes())
+        audio_data_np = np.frombuffer(frames, dtype=np.int16)
+
+    fft_data = np.fft.fft(audio_data_np)
+    power_spectrum = np.abs(fft_data) ** 2
+    max_power = np.max(power_spectrum)
+
+    if max_power < NOISE_FLOOR_THRESHOLD:
+        NOISE_FLOOR_THRESHOLD = adjust_floor(NOISE_FLOOR_THRESHOLD, max_power, ALPHA)
+        os.remove(wav_filename)
+        return jsonify({
+            "message": "Below noise threshold, skipping BirdNET",
+            "birds": []
+        })
     else:
-        return jsonify({"message": "Bird detection is already running"}), 400
+    
+        recording = Recording(analyzer, wav_filename, lat=lat, lon=lon, date=datetime.now(), min_conf=0.25)
+        recording.analyze()
+        birds = list({item['common_name'] for item in recording.detections})
 
+        # Store to Firestore
+        eastern = timezone('US/Eastern')
+        current_time = datetime.now().astimezone(eastern)
+        for bird in birds:
+            db.collection("birds").add({
+                "bird": bird,
+                "latitude": lat,
+                "longitude": lon,
+                "timestamp": current_time
+            })
 
-@app.route('/stop-detection', methods=['POST'])
-def stop_detection():
-    global is_running, process
-    if is_running and process:
-        try:
-            terminate_process_and_children(process.pid)
-            process = None
-            is_running = False
-            return jsonify({"message": "Bird detection stopped"})
-        except Exception as e:
-            return jsonify({"message": f"Error stopping detection: {str(e)}"}), 500
-    else:
-        return jsonify({"message": "Bird detection is not running"}), 400
-
-
-@app.route('/status', methods=['GET'])
-def status():
-    """Check if the bird detection process is running."""
-    global is_running
-    return jsonify({"running": is_running})
+        os.remove(wav_filename)
+        return jsonify({
+            "message": "File processed successfully",
+            "birds": birds
+        })
 
 @app.route('/register', methods=['POST'])
 def register():
