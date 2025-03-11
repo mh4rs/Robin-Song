@@ -77,7 +77,7 @@ const HistoryScreen: React.FC = () => {
       }
 
       const snapshot = await getDocs(q);
-      let birdData = snapshot.docs.map((doc) => ({
+      const birdData = snapshot.docs.map((doc) => ({
         id: doc.id,
         bird: doc.data().bird || "Unknown Bird",
         latitude: doc.data().latitude || 0,
@@ -95,12 +95,26 @@ const HistoryScreen: React.FC = () => {
       setBirds(newBirds);
       setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
       setHasMore(snapshot.docs.length === PAGE_SIZE);
+      applySearch(newBirds);
     } catch (error) {
       console.error("Error fetching birds:", error);
     } finally {
       setLoading(false);
       setLoadingMore(false);
     }
+  };
+
+  const applySearch = (data = birds) => {
+    if (!search) {
+      setFilteredBirds(data);
+      setGroupedBirds(groupByMonth(data));
+      return;
+    }
+
+    const fuse = new Fuse(data, { keys: ["bird"], threshold: 0.3 });
+    const result = fuse.search(search).map((res) => res.item);
+    setFilteredBirds(result);
+    setGroupedBirds(groupByMonth(result));
   };
 
   // Fetch data for new birds
