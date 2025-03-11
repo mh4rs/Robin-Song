@@ -86,8 +86,93 @@ const IdentifyScreen: React.FC = () => {
     fetchInitialLocation();
   }, []);
 
-  
+  // Fetch bird image from Unsplash
+  const fetchBirdImage = async (birdName: string) => {
+    setLoading(true);
+    try {
+      const response = await axios.get<{
+        results: { urls: { small: string } }[];
+      }>("https://api.unsplash.com/search/photos", {
+        params: { query: birdName, per_page: 1 },
+        headers: { Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}` },
+      });
 
+      const images = response.data.results;
+      setBirdImage(images.length > 0 ? images[0].urls.small : null);
+    } catch (error) {
+
+    }
+  };
+
+  // Start recording
+  const startRecording = async () => {
+    try {
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert("Permission required", "Enable microphone access in settings.");
+        return;
+      }
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+        shouldDuckAndroid: true,
+        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+      });
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      recordingRef.current = recording;
+      console.log("Recording started.");
+    } catch (error) {
+      console.error("Error starting recording:", error);
+    }
+  };
+
+  // Stop recording and upload
+  const stopRecordingAndUpload = async () => {
+    if (!recordingRef.current) return;
+    try {
+      await recordingRef.current.stopAndUnloadAsync();
+      console.log("Recording stopped.");
+      const uri = recordingRef.current.getURI();
+      if (uri) {
+        const formData = new FormData();
+        formData.append('file', {
+          uri,
+          name: 'recording.wav',
+          type: 'audio/wav',
+        } as any);
+        formData.append("latitude", String(latitude ?? 0));
+        formData.append("longitude", String(longitude ?? 0));
+        const response = await axios.post<UploadResponse>(
+          'http://192.168.1.108:5000/upload',
+          formData,
+          { headers: { 'Content-Type': 'multipart/form-data' } }
+        );
+        if (isDetecting && response.data.birds?.length) {
+          for (const bird of response.data.birds) {
+            if (!isDetecting) break;
+            console.log(`Detected: ${bird}`);
+            setLatestBird({
+              bird,
+              latitude: latitude ?? 0,
+              longitude: longitude ?? 0,
+              timestamp: new Date(),
+            });
+            await fetchBirdImage(bird);
+          }
+        }
+
+
+      }
+    } catch (error) {
+      console.error("Error uploading audio:", error);
+    } finally {
+      recordingRef.current = null;
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
