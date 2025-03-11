@@ -23,7 +23,7 @@ const SettingsScreen: React.FC = () => {
     React.useCallback(() => {
       const fetchUserPrefs = async () => {
         try {
-          const response = await fetch(`http://10.0.0.4:5000/users/${userId}`);
+          const response = await fetch(`http://.168.1.108:5000/users/${userId}`);
           if (!response.ok) {
             console.error("Failed to fetch user doc from server");
             return;
@@ -127,7 +127,7 @@ const SettingsScreen: React.FC = () => {
           onToggle={async (newValue) => {
             setLocationEnabled(newValue);
             try {
-              const patchResp = await fetch(`http://10.0.0.4:5000/users/${userId}/preferences`, {
+              const patchResp = await fetch(`http://192.168.1.108:5000/users/${userId}/preferences`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ locationPreferences: newValue }),
