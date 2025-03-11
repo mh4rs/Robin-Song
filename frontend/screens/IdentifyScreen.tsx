@@ -381,5 +381,24 @@ interface BirdInfo {
     },
   });
   
+  <View>
+  <Text style={styles.sectionHeading}>Migration & Range</Text>
+  <Text style={styles.sectionText}>
+    {birdInfo?.migration_text || "No migration info available."}
+  </Text>
+  <View style={styles.robinContainer}>
+    {loading ? (
+      <ActivityIndicator size="large" color={colors.primary} />
+    ) : birdInfo?.migration_map_url ? (
+      <Image
+        source={{ uri: birdInfo.migration_map_url }}
+        style={styles.migrationImage}
+      />
+    ) : (
+      <Text style={styles.sectionText}>No migration map available.</Text>
+    )}
+  </View>
+</View>
+
 
 export default IdentifyScreen;
