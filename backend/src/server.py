@@ -56,9 +56,6 @@ def terminate_process_and_children(proc_pid):
 
 @app.route('/bird-info', methods=['GET'])
 def get_bird_info():
-    """
-    Lookup the Audubon URL for a given bird from the bird_data.json lookup.
-    """
     bird_name = request.args.get('bird')
     if not bird_name:
         return jsonify({"error": "Bird name is required"}), 400
@@ -168,10 +165,7 @@ def scrape_bird_info():
             if migration_elem else "No migration info available."
         )
 
-        # -------------------------------------------
-        # Now, the migration map extraction with debug prints:
         migration_map_url = ""
-        # We expect a <div class="bird-rangemap"> based on your HTML
         rangemap_div = soup.find("div", class_="bird-rangemap")
         if rangemap_div:
             print("\nDEBUG: Found .bird-rangemap:\n", rangemap_div.prettify())
@@ -216,7 +210,6 @@ def scrape_bird_info():
                 print("DEBUG: No <picture> found in .bird-rangemap")
         else:
             print("DEBUG: No .bird-rangemap found in HTML")
-        # -------------------------------------------
 
         return jsonify({
             "description": description_text,
