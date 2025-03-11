@@ -16,6 +16,10 @@ import werkzeug
 from pydub import AudioSegment
 from birdnetlib import Recording
 from birdnetlib.analyzer import Analyzer
+import json
+from bs4 import BeautifulSoup
+import requests
+
 
 app = Flask(__name__)
 CORS(app)
@@ -37,6 +41,9 @@ ALPHA = 0.9
 is_running = False
 process = None  
 
+with open(os.path.join(os.getcwd(), "backend/src/bird_data.json"), "r", encoding="utf-8") as file:
+    bird_data = json.load(file)
+
 def terminate_process_and_children(proc_pid):
     """Gracefully terminate a process and any child processes."""
     try:
@@ -47,7 +54,181 @@ def terminate_process_and_children(proc_pid):
     except psutil.NoSuchProcess:
         pass
 
+@app.route('/bird-info', methods=['GET'])
+def get_bird_info():
+    bird_name = request.args.get('bird')
+    if not bird_name:
+        return jsonify({"error": "Bird name is required"}), 400
 
+    bird_url = bird_data.get(bird_name)
+    if not bird_url:
+        return jsonify({"error": "Bird not found"}), 404
+
+    return jsonify({"name": bird_name, "url": bird_url}), 200
+
+@app.route('/scrape-bird-info', methods=['GET'])
+def scrape_bird_info():
+    url = request.args.get('url')
+    if not url:
+        return jsonify({"error": "URL is required"}), 400
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, "html.parser")
+
+        # Extract description
+        description_elem = soup.find("div", class_="bird_info_item info_description")
+        description_text = (
+            description_elem.find("div", class_="content").get_text(strip=True)
+            if description_elem else "No description available."
+        )
+
+        # Extract At a Glance info
+        at_a_glance_elem = soup.find("h2", id="at_a_glance")
+        at_a_glance_text = (
+            at_a_glance_elem.find_next("div", class_="intro_text").get_text(strip=True)
+            if at_a_glance_elem else "No at-a-glance information available."
+        )
+
+        # Extract habitat information
+        habitat_elem = soup.find("div", class_="bird_info_item info_habitat")
+        habitat_text = (
+            habitat_elem.find("div", class_="content").get_text(strip=True)
+            if habitat_elem else "No habitat information available."
+        )
+
+        # Extract main image URL
+        image_url = ""
+        media_data = soup.find("div", class_="media-data")
+        if media_data:
+            picture_tag = media_data.find("picture")
+            if picture_tag:
+                img_tag = picture_tag.find("img")
+                if img_tag:
+                    if "data-srcset" in img_tag.attrs:
+                        image_url = img_tag["data-srcset"].split(" ")[0]
+                    elif "srcset" in img_tag.attrs:
+                        image_url = img_tag["srcset"].split(" ")[0]
+                    elif "src" in img_tag.attrs:
+                        image_url = img_tag["src"]
+
+        # Extract feeding behavior
+        feeding_elem = soup.find("div", class_="bird_info_item info_feeding")
+        feeding_text = (
+            feeding_elem.find("div", class_="content").get_text(strip=True)
+            if feeding_elem else "No feeding info available."
+        )
+
+        # Extract diet information
+        diet_elem = soup.find("div", class_="bird_info_item info_diet")
+        diet_text = (
+            diet_elem.find("div", class_="content").get_text(strip=True)
+            if diet_elem else "No diet info available."
+        )
+
+        # Extract scientific name (subtitle)
+        subtitle_elem = soup.find("div", class_="subtitle")
+        subtitle_text = subtitle_elem.get_text(strip=True) if subtitle_elem else ""
+
+        # Extract size information
+        size_elem = soup.find("div", class_="tax-item icons_dictionary_before size_icon")
+        size_text = (
+            size_elem.find("div", class_="tax-value").get_text(strip=True)
+            if size_elem else "No size info available."
+        )
+
+        # Extract color information
+        color_elem = soup.find("div", class_="tax-item icons_dictionary_before eye_icon")
+        color_text = (
+            color_elem.find("div", class_="tax-value").get_text(strip=True)
+            if color_elem else "No color info available."
+        )
+
+        # Extract wing shape
+        wing_elem = soup.find("div", class_="tax-item icons_dictionary_before binoculars_icon")
+        wing_text = (
+            wing_elem.find("div", class_="tax-value").get_text(strip=True)
+            if wing_elem else "No wing shape info available."
+        )
+
+        # Extract tail shape
+        tail_elem = soup.find("div", class_="tax-item icons_dictionary_before tail_icon")
+        tail_text = (
+            tail_elem.find("div", class_="tax-value").get_text(strip=True)
+            if tail_elem else "No tail shape info available."
+        )
+
+        # Extract migration text
+        migration_elem = soup.find("div", class_="bird_info_item info_migration")
+        migration_text = (
+            migration_elem.find("div", class_="content").get_text(strip=True)
+            if migration_elem else "No migration info available."
+        )
+
+        migration_map_url = ""
+        rangemap_div = soup.find("div", class_="bird-rangemap")
+        if rangemap_div:
+            print("\nDEBUG: Found .bird-rangemap:\n", rangemap_div.prettify())
+            picture_tag = rangemap_div.find("picture")
+            if picture_tag:
+                print("DEBUG: Found <picture> in bird-rangemap:\n", picture_tag.prettify())
+                # Try <img> first
+                img_tag = picture_tag.find("img")
+                if img_tag:
+                    print("DEBUG: Found <img> in <picture>:", img_tag)
+                    if "data-srcset" in img_tag.attrs:
+                        migration_map_url = img_tag["data-srcset"].split(" ")[0]
+                        print("DEBUG: Using <img> data-srcset ->", migration_map_url)
+                    elif "srcset" in img_tag.attrs:
+                        migration_map_url = img_tag["srcset"].split(" ")[0]
+                        print("DEBUG: Using <img> srcset ->", migration_map_url)
+                    elif "src" in img_tag.attrs:
+                        migration_map_url = img_tag["src"]
+                        print("DEBUG: Using <img> src ->", migration_map_url)
+                    else:
+                        print("DEBUG: <img> has no data-srcset, srcset, or src")
+                else:
+                    source_tags = picture_tag.find_all("source")
+                    if source_tags:
+                        print("DEBUG: Found <source> tags:", source_tags)
+                        for source_tag in source_tags:
+                            if "data-srcset" in source_tag.attrs:
+                                migration_map_url = source_tag["data-srcset"].split(" ")[0]
+                                print("DEBUG: Using <source> data-srcset ->", migration_map_url)
+                                break
+                            elif "srcset" in source_tag.attrs:
+                                migration_map_url = source_tag["srcset"].split(" ")[0]
+                                print("DEBUG: Using <source> srcset ->", migration_map_url)
+                                break
+                            elif "src" in source_tag.attrs:
+                                migration_map_url = source_tag["src"]
+                                print("DEBUG: Using <source> src ->", migration_map_url)
+                                break
+                    else:
+                        print("DEBUG: No <source> or <img> found in <picture>.")
+            else:
+                print("DEBUG: No <picture> found in .bird-rangemap")
+        else:
+            print("DEBUG: No .bird-rangemap found in HTML")
+
+        return jsonify({
+            "description": description_text,
+            "at_a_glance": at_a_glance_text,
+            "habitat": habitat_text,
+            "image_url": image_url,
+            "feeding_behavior": feeding_text,
+            "diet": diet_text,
+            "scientific_name": subtitle_text,
+            "size": size_text,
+            "color": color_text,
+            "wing_shape": wing_text,
+            "tail_shape": tail_text,
+            "migration_text": migration_text,
+            "migration_map_url": migration_map_url
+        })
+    except Exception as e:
+        return jsonify({"error": f"Error scraping bird info: {str(e)}"}), 500
+    
 def adjust_floor(current_thresh, observed_power, alpha=0.9):
     return alpha * current_thresh + (1 - alpha) * observed_power
 
@@ -59,7 +240,7 @@ def upload():
         return jsonify({"error": "No file found"}), 400
 
     uploaded_file = request.files['file']
-    raw_filename = "incoming.m4a"
+    raw_filename = werkzeug.utils.secure_filename(uploaded_file.filename)
     uploaded_file.save(raw_filename)
 
     wav_filename = "temp.wav"
@@ -73,8 +254,8 @@ def upload():
         return jsonify({"error": "Failed to convert M4A to WAV"}), 500
 
     os.remove(raw_filename)
-    lat = 0.0
-    lon = 0.0
+    lat = float(request.form.get('latitude', 0.0))
+    lon = float(request.form.get('longitude', 0.0))
 
     # Noise-floor check
     with wave.open(wav_filename, 'rb') as wf:
@@ -115,6 +296,43 @@ def upload():
             "birds": birds
         })
 
+@app.route('/start-detection', methods=['POST'])
+def start_detection():
+    global is_running, process
+    if not is_running:
+        try:
+            process = subprocess.Popen(["python", "detect_birds.py"])
+            is_running = True
+            print("Detection started.")
+            return jsonify({"message": "Bird detection started"})
+        except Exception as e:
+            print(f"Error starting detection: {str(e)}")
+            return jsonify({"message": f"Error starting detection: {str(e)}"}), 500
+    else:
+        return jsonify({"message": "Bird detection is already running"}), 400
+
+@app.route('/stop-detection', methods=['POST'])
+def stop_detection():
+    global is_running, process
+    if is_running and process:
+        try:
+            terminate_process_and_children(process.pid)
+            process = None
+            is_running = False
+            print("Detection stopped.")
+            return jsonify({"message": "Bird detection stopped"})
+        except Exception as e:
+            print(f"Error stopping detection: {str(e)}")
+            return jsonify({"message": f"Error stopping detection: {str(e)}"}), 500
+    else:
+        return jsonify({"message": "Bird detection is not running"}), 400
+
+@app.route('/status', methods=['GET'])
+def status():
+    global is_running
+    return jsonify({"running": is_running})
+
+# Login, Register and Logout Endpoints
 @app.route('/register', methods=['POST'])
 def register():
     """Register a new user."""
@@ -401,7 +619,6 @@ def get_hotspot():
         best_hotspot = hotspots[0]
 
     return jsonify(best_hotspot), 200
-
 
 
 if __name__ == "__main__":
