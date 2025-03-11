@@ -114,7 +114,7 @@ def upload():
             "message": "File processed successfully",
             "birds": birds
         })
-
+# Login, Register and Logout Endpoints
 @app.route('/register', methods=['POST'])
 def register():
     """Register a new user."""
