@@ -18,6 +18,7 @@ const SettingsScreen: React.FC = () => {
   const [locationEnabled, setLocationEnabled] = useState<boolean>(false);
   const [voiceCommandsEnabled, setVoiceCommandsEnabled] = useState<boolean>(false);
   const userId = "CQsoyFEnAxWfG20BWvULv9hJSZa2"; // hardcoded for now
+  const [profilePicture, setProfilePicture] = useState<string>('');
 
   useFocusEffect(
     React.useCallback(() => {
@@ -30,6 +31,9 @@ const SettingsScreen: React.FC = () => {
           }
           const userData = await response.json();
           setLocationEnabled(Boolean(userData.locationPreferences));
+          // Debug: Log the fetched profile picture from Firebase
+          console.log("Fetched Profile Picture from Firebase:", userData.profilePicture);
+          setProfilePicture(userData.profilePicture || '');
         } catch (err) {
           console.error("Error fetching user prefs:", err);
         }
@@ -37,6 +41,32 @@ const SettingsScreen: React.FC = () => {
       fetchUserPrefs();
     }, [])
   );
+  
+  
+const getImageSource = (path: string) => {
+  if (!path) return require("../assets/img/robin.png"); 
+
+  const normalizedPath = path.replace(/\.\.\//g, "").trim(); 
+
+  const imageMappings: { [key: string]: any } = {
+    "assets/img/blue_jay.png": require("../assets/img/blue_jay.png"),
+    "assets/img/american_crow.png": require("../assets/img/american_crow.png"),
+    "assets/img/canada_goose.png": require("../assets/img/canada_goose.png"),
+    "assets/img/canvasback.png": require("../assets/img/canvasback.png"),
+    "assets/img/common_grackle.png": require("../assets/img/common_grackle.png"),
+    "assets/img/european_starling.png": require("../assets/img/european_starling.png"),
+    "assets/img/mallard.png": require("../assets/img/mallard.png"),
+    "assets/img/northern_cardinal.png": require("../assets/img/northern_cardinal.png"),
+    "assets/img/red-winged-blackbird.png": require("../assets/img/red-winged-blackbird.png"),
+    "assets/img/ring-billed-gull.png": require("../assets/img/ring-billed-gull.png"),
+    "assets/img/tree-swallow.png": require("../assets/img/tree-swallow.png"),
+    "assets/img/turkey_vulture.png": require("../assets/img/turkey_vulture.png"),
+  };
+
+  return imageMappings[normalizedPath] || require("../assets/img/robin.png");
+};
+
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -45,7 +75,7 @@ const SettingsScreen: React.FC = () => {
         <View style={styles.accountCard}>
           <View style={styles.leftSide}>
             <View style={styles.topRow}>
-              <Image source={require("../assets/img/robin.png")} style={styles.image} />
+            <Image source={getImageSource(profilePicture)} style={styles.image} />
             </View>
             <Text style={styles.label}>Email</Text>
             <Text style={styles.label}>Location</Text>

@@ -9,6 +9,8 @@ import firebase_admin
 from firebase_admin import auth
 from flask_cors import CORS
 import math
+import random
+
 
 app = Flask(__name__)
 CORS(app)
@@ -24,7 +26,6 @@ is_running = False
 process = None  
 
 def terminate_process_and_children(proc_pid):
-    """Gracefully terminate a process and any child processes."""
     try:
         parent = psutil.Process(proc_pid)
         for child in parent.children(recursive=True):
@@ -64,13 +65,11 @@ def stop_detection():
 
 @app.route('/status', methods=['GET'])
 def status():
-    """Check if the bird detection process is running."""
     global is_running
     return jsonify({"running": is_running})
 
 @app.route('/register', methods=['POST'])
 def register():
-    """Register a new user."""
     try:
         data = request.json
         email = data.get("email")
@@ -89,6 +88,22 @@ def register():
             password.encode('utf-8'), bcrypt.gensalt()
         ).decode('utf-8')
 
+        avatar_options = [
+            "assets/img/blue_jay.png",  
+            "assets/img/american_crow.png",  
+            "assets/img/canada_goose.png",
+            "assets/img/canvasback.png",
+            "assets/img/common_grackle.png",
+            "assets/img/european_starling.png",
+            "assets/img/mallard.png",
+            "assets/img/northern_cardinal.png",
+            "assets/img/red-winged-blackbird.png",
+            "assets/img/ring-billed-gull.png",
+            "assets/img/tree-swallow.png",
+            "assets/img/turkey_vulture.png",  
+        ]
+        selected_avatar = random.choice(avatar_options)
+
         user = auth.create_user(email=email, password=password)
 
         user_data = {
@@ -98,6 +113,7 @@ def register():
             "password": hashed_password,
             "voiceCommandsEnabled": False,
             "locationPreferences": False,
+            "profilePicture": selected_avatar,
             "createdAt": firestore.SERVER_TIMESTAMP
         }
         db.collection("users").document(user.uid).set(user_data)
@@ -112,7 +128,6 @@ def register():
 
 @app.route('/google-register', methods=['POST'])
 def google_register():
-    """Register or update a user who signs in with Google."""
     try:
         data = request.json
         email = data.get("email")
@@ -123,7 +138,6 @@ def google_register():
         if not email or not uid:
             return jsonify({"error": "Missing required fields"}), 400
 
-        # Check if user is in Firestore
         user_query = db.collection("users").where("email", "==", email).stream()
         existing_user = next(user_query, None)
 
@@ -133,6 +147,22 @@ def google_register():
                 "userId": existing_user.id
             }), 200
 
+        avatar_options = [
+            "assets/img/blue_jay.png",  
+            "assets/img/american_crow.png",  
+            "assets/img/canada_goose.png",
+            "assets/img/canvasback.png",
+            "assets/img/common_grackle.png",
+            "assets/img/european_starling.png",
+            "assets/img/mallard.png",
+            "assets/img/northern_cardinal.png",
+            "assets/img/red-winged-blackbird.png",
+            "assets/img/ring-billed-gull.png",
+            "assets/img/tree-swallow.png",
+            "assets/img/turkey_vulture.png",  
+        ]
+        selected_avatar = random.choice(avatar_options)
+
         user_data = {
             "firstName": first_name,
             "lastName": last_name,
@@ -141,6 +171,7 @@ def google_register():
             "password": "Google Account",
             "voiceCommandsEnabled": False,
             "locationPreferences": False,
+            "profilePicture": selected_avatar,
             "createdAt": firestore.SERVER_TIMESTAMP
         }
         new_user_ref = db.collection("users").add(user_data)
@@ -156,7 +187,6 @@ def google_register():
 
 @app.route('/login', methods=['POST'])
 def login():
-    """Authenticate user login."""
     try:
         data = request.json
         email = data.get("email")
@@ -189,7 +219,6 @@ def login():
 
 @app.route('/users', methods=['POST'])
 def add_user():
-    """Add a new user."""
     try:
         data = request.json
         user = {
@@ -206,7 +235,6 @@ def add_user():
 
 @app.route('/users/<user_id>/preferences', methods=['PATCH'])
 def update_user_preferences(user_id):
-    """Update user preferences (voice commands & location)."""
     try:
         data = request.json
         updates = {}
@@ -226,10 +254,7 @@ def update_user_preferences(user_id):
 
 @app.route('/users/<user_id>', methods=['GET'])
 def get_user(user_id):
-    """
-    Fetch the user document for the given user_id.
-    Returns the user's data as JSON, or 404 if not found.
-    """
+
     try:
         doc_ref = db.collection("users").document(user_id).get()
         if not doc_ref.exists:
@@ -243,7 +268,6 @@ def get_user(user_id):
 
 @app.route('/chats/<user_id>', methods=['GET'])
 def get_user_chats(user_id):
-    """Fetch all chats for a user."""
     try:
         chats = db.collection("chats").where("userId", "==", user_id).stream()
         chat_list = [{"chatId": chat.id, **chat.to_dict()} for chat in chats]
@@ -254,7 +278,6 @@ def get_user_chats(user_id):
 
 @app.route('/chats', methods=['POST'])
 def create_chat():
-    """Create a new chat for a user."""
     try:
         data = request.json
         chat = {
@@ -270,7 +293,6 @@ def create_chat():
 
 @app.route('/chats/<chat_id>/messages', methods=['POST'])
 def add_message_to_chat(chat_id):
-    """Add a message to an existing chat."""
     try:
         data = request.json
         message = {
@@ -286,7 +308,6 @@ def add_message_to_chat(chat_id):
 
 @app.route('/chats/<chat_id>/messages', methods=['GET'])
 def get_chat_messages(chat_id):
-    """Fetch all messages for a chat."""
     try:
         messages_ref = db.collection("chats").document(chat_id).collection("messages")
         snapshot = messages_ref.order_by("timestamp").stream()
@@ -298,11 +319,8 @@ def get_chat_messages(chat_id):
 
 
 def haversine_distance(lat1, lon1, lat2, lon2):
-    """
-    Calculate distance in KM between two lat/lon points using Haversine.
-    We'll convert to miles below if we want that.
-    """
-    R = 6371.0  # Earth radius in km
+
+    R = 6371.0  
     d_lat = math.radians(lat2 - lat1)
     d_lon = math.radians(lon2 - lon1)
     a = (math.sin(d_lat / 2) ** 2 +
@@ -318,11 +336,9 @@ def get_hotspot():
     bird = request.args.get("bird", "robins")
     month = int(request.args.get("month", 1))
 
-    # optional lat/lon
     user_lat = request.args.get("lat", type=float)
     user_lon = request.args.get("lon", type=float)
 
-    # 1) fetch the single doc
     doc_ref = (
         db.collection("forecasts")
           .document(bird)
