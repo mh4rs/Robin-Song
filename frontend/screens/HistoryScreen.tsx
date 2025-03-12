@@ -12,6 +12,7 @@ import {
   Linking,
 } from "react-native";
 import { collection, query, orderBy, limit, startAfter, getDocs, where } from "firebase/firestore";
+import axios from "axios";
 import { db } from "../../database/firebaseConfig";
 import SearchBar from "../components/SearchBar";
 import Filter from "../components/Filter";
@@ -115,6 +116,37 @@ const HistoryScreen: React.FC = () => {
     const result = fuse.search(search).map((res) => res.item);
     setFilteredBirds(result);
     setGroupedBirds(groupByMonth(result));
+  };
+
+  const fetchBirdData = async (birdName: string) => {
+    try {
+      const response = await axios.get<{ url: string }>(
+        "http://192.168.1.108:5000/bird-info",
+        { params: { bird: birdName } }
+      );
+
+      const audubonUrl = response.data.url || "";
+      let imageUrl = "";
+
+      if (audubonUrl) {
+        const scrapeResponse = await axios.get<{ image_url?: string }>(
+          "http://192.168.1.108:5000/scrape-bird-info",
+          { params: { url: audubonUrl } }
+        );
+        imageUrl = scrapeResponse.data.image_url || "";
+      }
+
+      setBirdDataMap((prev) => ({
+        ...prev,
+        [birdName]: { imageUrl, audubonUrl },
+      }));
+    } catch (error) {
+      console.error(`Error fetching data for ${birdName}:`, error);
+      setBirdDataMap((prev) => ({
+        ...prev,
+        [birdName]: { imageUrl: "", audubonUrl: "" },
+      }));
+    }
   };
 
   // Fetch data for new birds
