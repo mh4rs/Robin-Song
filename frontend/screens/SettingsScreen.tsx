@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Image, SafeAreaView, ScrollView, Text, StyleSheet, View, Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import colors from '../assets/theme/colors';
 import Accordion from '../components/Accordion';
 import TextFormField from '../components/TextForm';
@@ -14,6 +14,28 @@ const SettingsScreen: React.FC = () => {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [locationEnabled, setLocationEnabled] = useState<boolean>(false);
+  const [voiceCommandsEnabled, setVoiceCommandsEnabled] = useState<boolean>(false);
+  const userId = "CQsoyFEnAxWfG20BWvULv9hJSZa2"; // hardcoded for now
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchUserPrefs = async () => {
+        try {
+          const response = await fetch(`http://10.0.0.4:5000/users/${userId}`);
+          if (!response.ok) {
+            console.error("Failed to fetch user doc from server");
+            return;
+          }
+          const userData = await response.json();
+          setLocationEnabled(Boolean(userData.locationPreferences));
+        } catch (err) {
+          console.error("Error fetching user prefs:", err);
+        }
+      };
+      fetchUserPrefs();
+    }, [])
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -30,8 +52,8 @@ const SettingsScreen: React.FC = () => {
                 style={styles.image}
               />
             </View>
-              <Text style={styles.label}>Email</Text>
-              <Text style={styles.label}>Location</Text>
+            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>Location</Text>
           </View>
           <View>
             <View style={styles.topRow}>
@@ -68,7 +90,7 @@ const SettingsScreen: React.FC = () => {
           />
         </Accordion>
 
-        <Accordion title="Change Email Address" startIcon='email-edit-outline'>
+        <Accordion title="Change Email Address" startIcon="email-edit-outline">
           <TextFormField
             label="Change Email"
             placeholder="jodijov@umich.edu"
@@ -84,11 +106,8 @@ const SettingsScreen: React.FC = () => {
           />
         </Accordion>
 
-        <Accordion title="Change Password" startIcon='shield-edit-outline'>
-          <TextFormField
-            placeholder="Enter new password"
-            isPassword
-          />
+        <Accordion title="Change Password" startIcon="shield-edit-outline">
+          <TextFormField placeholder="Enter new password" isPassword />
           <Button
             title="Submit"
             onPress={() => Alert.alert('Submit Button Pressed')}
@@ -99,15 +118,34 @@ const SettingsScreen: React.FC = () => {
         <Toggle
           title="Enable Voice Commands"
           startIcon="microphone-outline"
-          onToggle={(value) => console.log('Toggle is', value ? 'On' : 'Off')}
+          value={voiceCommandsEnabled}
+          onToggle={(newValue) => {
+            setVoiceCommandsEnabled(newValue);
+            console.log("Voice commands toggle is now:", newValue);
+          }}
           description="Enabling voice commands allows you to navigate the app using verbal commands. Microphone access is required in order to enable voice commands."
         />
 
         <Toggle
           title="Enable Location for Forecast"
           startIcon="map-marker-outline"
-          onToggle={(value) => console.log('Toggle is', value ? 'On' : 'Off')}
-          description="Enable your location for personalized bird species predictions for your area. Locaiton access is required in order to receive bird forecast predictions."
+          value={locationEnabled}
+          onToggle={async (newValue) => {
+            setLocationEnabled(newValue);
+            try {
+              const patchResp = await fetch(`http://10.0.0.4:5000/users/${userId}/preferences`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ locationPreferences: newValue }),
+              });
+              if (!patchResp.ok) {
+                console.error("Failed to update locationPreferences on server");
+              }
+            } catch (err) {
+              console.error("Error PATCHing preferences:", err);
+            }
+          }}
+          description="Enable your location for personalized bird species predictions for your area. Location access is required in order to receive bird forecast prediction local to your area."
         />
 
         <View style={styles.buttonContainer}>
@@ -116,14 +154,12 @@ const SettingsScreen: React.FC = () => {
             onPress={() => navigation.navigate("Home")}
             variant="secondary"
           />
-
           <Button
-              title="Delete Account"
-              onPress={() => Alert.alert('Delete Account Pressed')}
-              variant="primary"
+            title="Delete Account"
+            onPress={() => Alert.alert('Delete Account Pressed')}
+            variant="primary"
           />
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -164,14 +200,6 @@ const styles = StyleSheet.create({
     height: 75,
     justifyContent: 'center',
   },
-  // row: {
-  //   flexDirection: 'row',
-  //   alignItems: 'center',
-  // },
-  // leftSide: {
-  //   width: 90,
-  //   alignItems: 'flex-start',
-  // },
   name: {
     fontFamily: 'Caprasimo',
     fontSize: 32,
@@ -198,7 +226,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginTop: 24,
-  }
+  },
 });
 
 export default SettingsScreen;
