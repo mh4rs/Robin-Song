@@ -74,7 +74,6 @@ const ChatModal: React.FC<ChatModalProps> = ({ visible, onClose }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        console.log("User authenticated:", user.uid);
         setUserId(user.uid);
       } else {
         console.log("Using default user ID");
@@ -142,22 +141,18 @@ const ChatModal: React.FC<ChatModalProps> = ({ visible, onClose }) => {
               : new Date() 
         }));              
 
-            console.log(`Fetched messages for thread ${selectedChat}:`, fetchedMessages);
             setChatMessages(prev => ({ ...prev, [selectedChat]: fetchedMessages }));
         });
 
         return () => {
-            console.log("Unsubscribing from previous chat listener");
             unsubscribe();
         };
     }
   }, [selectedChat]);
 
   const sendMessage = async (threadID: string, message: string) => {
-    console.log(`Sending message to ChatGPT under thread: ${threadID}`);
 
     if (!threadID) {
-        console.log("sendMessage aborted: Missing thread ID.");
         return;
     }
 
@@ -189,7 +184,6 @@ const ChatModal: React.FC<ChatModalProps> = ({ visible, onClose }) => {
         }
 
         const data = await response.json();
-        console.log("ChatGPT Response received:", data);
 
         setIsTyping(false); 
 
@@ -197,7 +191,6 @@ const ChatModal: React.FC<ChatModalProps> = ({ visible, onClose }) => {
             const existingMessages = prev[threadID] || [];
 
             if (existingMessages.some(msg => msg.content === data.botMessage)) {
-                console.log("Duplicate response detected, skipping append.");
                 return prev;
             }
 
@@ -225,12 +218,10 @@ const ChatModal: React.FC<ChatModalProps> = ({ visible, onClose }) => {
 
   const startNewChat = async (message: string) => {
     try {
-        console.log("Creating a new chat with message:", message);
         const chatTitle = message.substring(0, 30);
 
         const existingChat = chats.find(chat => chat.title === chatTitle);
         if (existingChat) {
-            console.log("Chat with this title already exists, selecting existing chat:", existingChat.id);
             setSelectedChat(existingChat.id);
             await sendMessage(existingChat.id, message);
             return existingChat.id;
@@ -249,7 +240,6 @@ const ChatModal: React.FC<ChatModalProps> = ({ visible, onClose }) => {
         const data = await response.json();
         const threadID = data.chatId;
 
-        console.log("New chat created with ID:", threadID);
 
         setChats(prev => {
             if (!prev.some(chat => chat.id === threadID)) {
@@ -269,14 +259,12 @@ const ChatModal: React.FC<ChatModalProps> = ({ visible, onClose }) => {
 
 const handleSendMessage = async () => {
     if (!message.trim()) {
-        console.log("No message entered.");
         return;
     }
 
     let threadID = selectedChat;
 
     if (!threadID) {
-        console.log("No chat selected, starting a new chat.");
         const newThreadID = await startNewChat(message);
         if (!newThreadID) {
             console.error("Failed to create a new chat.");

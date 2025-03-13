@@ -182,7 +182,7 @@ const ForecastScreen: React.FC = () => {
                 longitude: userCoords?.longitude ?? hotspot?.lon ?? -83.6875,
                 latitudeDelta: 0.05,
                 longitudeDelta: 0.05,
-              }}                           
+              }}
               onPress={() => {
                 const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${hotspot.lat},${hotspot.lon}`;
                 Linking.openURL(mapsUrl);

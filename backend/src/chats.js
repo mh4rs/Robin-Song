@@ -45,7 +45,6 @@ router.post('/', async (req, res) => {
 });
 
 router.post('/message', async (req, res) => {
-    console.log("Received ChatGPT request from frontend...");
     await sendMessageToChatGPT(req, res);
 });
 

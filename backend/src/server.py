@@ -372,11 +372,9 @@ def register():
         }
         db.collection("users").document(user.uid).set(user_data)
 
-        print(f"User registered successfully: {user.uid}")
         return jsonify({"message": "User registered successfully", "userId": user.uid})
 
     except Exception as e:
-        print(f"Error creating user: {str(e)}")
         return jsonify({"error": f"Error creating user: {str(e)}"}), 500
 
 
@@ -551,6 +549,7 @@ def send_message_to_chat(chat_id):
         system_prompt = (
             "You are a birdwatching assistant answering with enthusiasm! You are roleplaying as the bird the user is asking about. "
             "Keep your responses strictly 1-2 sentences long. Be concise but informative. "
+            "Do not tell the user that you are roleplaying or that you are pretending to be a bird. "
             "Answer questions that are only related to birds. "
             "If a question is outside bird-related topics, respond politely, mentioning that you only answer bird-related questions."
         )
