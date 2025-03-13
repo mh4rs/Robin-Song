@@ -49,6 +49,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ visible, onClose }) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const typingDots = useRef(new Animated.Value(0)).current;
+  const [inputHeight, setInputHeight] = useState(40);
 
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
 
@@ -300,105 +301,129 @@ const handleSendMessage = async () => {
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.background}>
-        <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={{ flex: 1 }}>
-              {chatListVisible ? (
-                <ChatListScreen chats={chats} onSelectChat={setSelectedChat} onClose={() => setChatListVisible(false)} onSetChats={setChats} selectedChat={selectedChat} setSelectedChat={setSelectedChat} />
-              ) : (
-                <>
+        <KeyboardAvoidingView
+          style={styles.container}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <View style={{ flex: 1 }}>
+            {chatListVisible ? (
+              <ChatListScreen
+                chats={chats}
+                onSelectChat={setSelectedChat}
+                onClose={() => setChatListVisible(false)}
+                onSetChats={setChats}
+                selectedChat={selectedChat}
+                setSelectedChat={setSelectedChat}
+              />
+            ) : (
+              <>
                 <View style={styles.topBarContainer}>
-                    <TouchableOpacity style={styles.newChatContainer} onPress={() => {
-                        setSelectedChat(null);
-                        setChatListVisible(true);
-                    }}>
-                        <Text style={styles.newChatText}>{selectedChat ? chats.find(c => c.id === selectedChat)?.title : 'New Chat'}</Text>
-                        <MaterialCommunityIcons name="chevron-down" size={20} color={colors.secondary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-                        <Ionicons name="close" size={30} color={colors.primary} />
-                    </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.newChatContainer}
+                    onPress={() => {
+                      setSelectedChat(null);
+                      setChatListVisible(true);
+                    }}
+                  >
+                    <Text style={styles.newChatText}>
+                      {selectedChat ? chats.find((c) => c.id === selectedChat)?.title : 'New Chat'}
+                    </Text>
+                    <MaterialCommunityIcons name="chevron-down" size={20} color={colors.secondary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                    <Ionicons name="close" size={30} color={colors.primary} />
+                  </TouchableOpacity>
                 </View>
-                  <ScrollView 
-                    ref={scrollViewRef}
-                    contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 10, paddingBottom: 20 }}
-                    keyboardShouldPersistTaps="handled"
-                    onContentSizeChange={() => {
-                        if (scrollViewRef.current) {
-                            scrollViewRef.current.scrollToEnd({ animated: true });
-                        }
-                    }}
-                    onLayout={() => {
-                        if (scrollViewRef.current) {
-                            scrollViewRef.current.scrollToEnd({ animated: true });
-                        }
-                    }}
-                    showsVerticalScrollIndicator={false}
-                    scrollEnabled
+                <ScrollView
+                  ref={scrollViewRef}
+                  contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: inputHeight + 70 }}
+                  keyboardShouldPersistTaps="handled"
+                  keyboardDismissMode="on-drag"
+                  onContentSizeChange={() => {
+                    if (scrollViewRef.current) {
+                      scrollViewRef.current.scrollToEnd({ animated: true });
+                    }
+                  }}
+                  onLayout={() => {
+                    if (scrollViewRef.current) {
+                      scrollViewRef.current.scrollToEnd({ animated: true });
+                    }
+                  }}
+                  showsVerticalScrollIndicator={true}
+                  scrollEnabled={true}
+                  style={{ flex: 1 }}
                 >
-                    {selectedChat ? (
-                        chatMessages[selectedChat]?.map((msg) => (
-                            <View key={msg.id} style={[styles.chatBubble, msg.sender === "user" ? styles.userBubble : styles.aiBubble]}>
-                                <View style={{ flexDirection: "column" }}>
-                                    <Text style={styles.chatText}>{msg.content}</Text>
-                                    <Text style={styles.chatTimestamp}>
-                                        {msg.timestamp instanceof Date
-                                            ? msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                            : "N/A"}
-                                    </Text>
-                                </View>
-                            </View>
-                        ))
-                    ) : (
+                  {selectedChat ? (
+                    chatMessages[selectedChat]?.map((msg) => (
+                      <View
+                        key={msg.id}
+                        style={[styles.chatBubble, msg.sender === 'user' ? styles.userBubble : styles.aiBubble]}
+                      >
+                        <View style={{ flexDirection: 'column' }}>
+                          <Text style={styles.chatText}>{msg.content}</Text>
+                          <Text style={styles.chatTimestamp}>
+                            {msg.timestamp instanceof Date
+                              ? msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                              : 'N/A'}
+                          </Text>
+                        </View>
+                      </View>
+                    ))
+                  ) : (
                     <View style={styles.homeScreen}>
                       <View style={styles.leftContainer}>
-                          <Image source={require('frontend/assets/img/chatbotlogo.png')} style={styles.chatbotImage} />
-                          <Text style={styles.heading}>Hi Jodi, I'm Robin! Tweet Tweet!</Text>
-                          <Text style={styles.subHeading}>How can I help you?</Text>
-                          <Text style={styles.suggestionsHeading}>Suggestions</Text>
-                  
-                          {suggestedQuestions.length > 0 ? (
-                              suggestedQuestions.map((question, index) => (
-                                  <ChatQuestion key={index} title={question} onPress={() => startNewChat(question)} />
-                              ))
-                          ) : (
-                              <Text style={styles.loadingText}>Loading suggestions...</Text>
-                          )}
+                        <Image
+                          source={require('frontend/assets/img/chatbotlogo.png')}
+                          style={styles.chatbotImage}
+                        />
+                        <Text style={styles.heading}>Hi Jodi, I'm Robin! Tweet Tweet!</Text>
+                        <Text style={styles.subHeading}>How can I help you?</Text>
+                        <Text style={styles.suggestionsHeading}>Suggestions</Text>
+  
+                        {suggestedQuestions.length > 0 ? (
+                          suggestedQuestions.map((question, index) => (
+                            <ChatQuestion key={index} title={question} onPress={() => startNewChat(question)} />
+                          ))
+                        ) : (
+                          <Text style={styles.loadingText}>Loading suggestions...</Text>
+                        )}
                       </View>
-                  </View>                  
-                    )}
-                    {isTyping && (
-                        <View style={[styles.chatBubble, styles.aiBubble, { alignSelf: 'flex-start', flexDirection: 'row' }]}>
-                            <Animated.Text style={[styles.chatText, { opacity: typingDots }]}>.</Animated.Text>
-                            <Animated.Text style={[styles.chatText, { opacity: typingDots }]}>.</Animated.Text>
-                            <Animated.Text style={[styles.chatText, { opacity: typingDots }]}>.</Animated.Text>
-                        </View>
-                    )}
+                    </View>
+                  )}
+                  {isTyping && (
+                    <View
+                      style={[styles.chatBubble, styles.aiBubble, { alignSelf: 'flex-start', flexDirection: 'row' }]}
+                    >
+                      <Animated.Text style={[styles.chatText, { opacity: typingDots }]}>.</Animated.Text>
+                      <Animated.Text style={[styles.chatText, { opacity: typingDots }]}>.</Animated.Text>
+                      <Animated.Text style={[styles.chatText, { opacity: typingDots }]}>.</Animated.Text>
+                    </View>
+                  )}
                 </ScrollView>
                 <View style={styles.inputWrapper}>
-                    <View style={styles.inputContainer}>
-                        <TextInput
-                            style={styles.inputField}
-                            placeholder="Ask me about birds..."
-                            placeholderTextColor={colors.accent}
-                            value={message}
-                            onChangeText={setMessage}
-                            onSubmitEditing={handleSendMessage}
-                            blurOnSubmit={false}
-                        />
-                        <TouchableOpacity style={styles.arrowButton} onPress={handleSendMessage}>
-                            <Ionicons name="arrow-up" size={25} color={colors.primary} />
-                        </TouchableOpacity>
-                    </View>
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={[styles.inputField, { minHeight: 25, maxHeight: 120 }]}
+                      placeholder="Ask me about birds..."
+                      placeholderTextColor={colors.accent}
+                      value={message}
+                      onChangeText={setMessage}
+                      onContentSizeChange={(e) => setInputHeight(e.nativeEvent.contentSize.height)}
+                      multiline
+                      blurOnSubmit={false}
+                    />
+                    <TouchableOpacity style={styles.arrowButton} onPress={handleSendMessage}>
+                      <Ionicons name="arrow-up" size={25} color={colors.primary} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-                </>
-              )}
-            </View>
-          </TouchableWithoutFeedback>
+              </>
+            )}
+          </View>
         </KeyboardAvoidingView>
       </View>
     </Modal>
-  );
+  );  
 };
 
 const ChatListScreen: React.FC<{ 
@@ -625,7 +650,8 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     width: '100%',
-    height: 50,
+    minHeight: 30,
+    maxHeight: 120,
     backgroundColor: colors.chatGPTCardBackground,
     borderRadius: 25,
     borderWidth: 3,
@@ -634,6 +660,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
     marginTop: 20,
+    paddingVertical: 10, 
   },
   inputField: {
     fontFamily: 'Radio Canada',
@@ -753,10 +780,10 @@ const styles = StyleSheet.create({
       marginBottom: 10,
   },
   inputWrapper: {
-      position: 'absolute',
-      bottom: 15,
-      left: 20,
-      right: 20,
+    position: 'absolute',
+    bottom: 15,
+    left: 20,
+    right: 20,
   },
   closeButtonWrapper: {
       position: 'absolute',
