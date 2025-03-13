@@ -23,7 +23,8 @@ module.exports = {
         process.env.GOOGLE_SERVICES_INFO || "./google-services/GoogleService-Info.plist",
       infoPlist: {
             ITSAppUsesNonExemptEncryption: false,
-            NSLocationWhenInUseUsageDescription: "We use your location to show bird hotspots near you."
+            NSLocationWhenInUseUsageDescription: "We use your location to show bird hotspots near you.",
+            NSMicrophoneUsageDescription: "We use your microphone audio to detect birds near you.",
           },
         
       config: {
@@ -47,6 +48,18 @@ module.exports = {
           ios: {
             useFrameworks: "static"
           }
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow Robin to access your microphone."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Robin to use your location."
         }
       ]
     ],

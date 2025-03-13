@@ -19,6 +19,7 @@ from birdnetlib.analyzer import Analyzer
 import json
 from bs4 import BeautifulSoup
 import requests
+import openai
 
 
 app = Flask(__name__)
@@ -30,6 +31,10 @@ cred = credentials.Certificate(
 )
 initialize_app(cred)
 db = firestore.client()
+
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+DEFAULT_USER_ID = "FsDwDpHUD6XQU3egNNCOJLCTiNg1"
 
 # BirdNET init
 analyzer = Analyzer()
@@ -506,59 +511,119 @@ def get_user(user_id):
         return jsonify({"error": f"Error fetching user: {str(e)}"}), 500
 
 
-@app.route('/chats/<user_id>', methods=['GET'])
-def get_user_chats(user_id):
-    """Fetch all chats for a user."""
-    try:
-        chats = db.collection("chats").where("userId", "==", user_id).stream()
-        chat_list = [{"chatId": chat.id, **chat.to_dict()} for chat in chats]
-        return jsonify(chat_list)
-    except Exception as e:
-        return jsonify({"error": f"Error fetching chats: {str(e)}"}), 500
-
-
-@app.route('/chats', methods=['POST'])
+@app.route("/chats", methods=["POST"])
 def create_chat():
-    """Create a new chat for a user."""
+    """Create a new chat thread for the default user."""
     try:
         data = request.json
-        chat = {
-            "userId": data["userId"],
-            "title": data["title"],
-            "createdAt": firestore.SERVER_TIMESTAMP
+        title = data.get("title", "New Chat")
+
+        existing_chats = db.collection("chats").where("title", "==", title).where("userId", "==", DEFAULT_USER_ID).stream()
+        for chat in existing_chats:
+            return jsonify({"message": "Chat already exists", "chatId": chat.id})
+
+        chat_data = {
+            "userId": DEFAULT_USER_ID,
+            "title": title,
+            "createdAt": firestore.SERVER_TIMESTAMP,
         }
-        chat_ref = db.collection("chats").add(chat)
+        chat_ref = db.collection("chats").add(chat_data)
         return jsonify({"message": "Chat created", "chatId": chat_ref[1].id})
     except Exception as e:
         return jsonify({"error": f"Error creating chat: {str(e)}"}), 500
 
 
-@app.route('/chats/<chat_id>/messages', methods=['POST'])
-def add_message_to_chat(chat_id):
-    """Add a message to an existing chat."""
+@app.route("/chats/<chat_id>/message", methods=["POST"])
+def send_message_to_chat(chat_id):
+    """Send a user message to ChatGPT and store the conversation."""
     try:
         data = request.json
-        message = {
-            "content": data["content"],
-            "timestamp": firestore.SERVER_TIMESTAMP
-        }
+        user_message = data["message"]
+
         messages_ref = db.collection("chats").document(chat_id).collection("messages")
-        message_ref = messages_ref.add(message)
-        return jsonify({"message": "Message added", "messageId": message_ref[1].id})
+        messages_ref.add({
+            "content": user_message,
+            "role": "user",
+            "sender": DEFAULT_USER_ID,
+            "timestamp": firestore.SERVER_TIMESTAMP
+        })
+
+        system_prompt = (
+            "You are a birdwatching assistant answering with enthusiasm! "
+            "Answer questions that are only related to birds with engaging, helpful responses. "
+            "If a question is outside bird-related topics, respond politely, mentioning that you only answer bird-related questions."
+        )
+
+        example_context = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": "What do birds eat?"},
+            {"role": "assistant", "content": "Birds enjoy a variety of foods, including seeds, berries, insects, and even small animals!"}
+        ]
+
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=example_context + [{"role": "user", "content": user_message}],
+        )
+
+        bot_message = response["choices"][0]["message"]["content"]
+
+        messages_ref.add({
+            "content": bot_message,
+            "role": "assistant",
+            "sender": "AI",
+            "timestamp": firestore.SERVER_TIMESTAMP
+        })
+
+        return jsonify({"botMessage": bot_message})
     except Exception as e:
-        return jsonify({"error": f"Error adding message: {str(e)}"}), 500
+        return jsonify({"error": f"Error sending message: {str(e)}"}), 500
 
 
-@app.route('/chats/<chat_id>/messages', methods=['GET'])
+@app.route("/chats/<chat_id>/messages", methods=["GET"])
 def get_chat_messages(chat_id):
-    """Fetch all messages for a chat."""
+    """Fetch all messages in a chat thread."""
     try:
         messages_ref = db.collection("chats").document(chat_id).collection("messages")
-        snapshot = messages_ref.order_by("timestamp").stream()
-        messages = [{"messageId": message.id, **message.to_dict()} for message in snapshot]
+        messages_snapshot = messages_ref.order_by("timestamp").stream()
+        messages = [{"messageId": msg.id, **msg.to_dict()} for msg in messages_snapshot]
         return jsonify(messages)
     except Exception as e:
         return jsonify({"error": f"Error fetching messages: {str(e)}"}), 500
+
+@app.route("/chats", methods=["GET"])
+def get_all_chats():
+    """Fetch all chat threads for the default user."""
+    try:
+        chats_ref = db.collection("chats").where("userId", "==", DEFAULT_USER_ID).stream()
+        chat_list = [{"chatId": chat.id, **chat.to_dict()} for chat in chats_ref]
+        return jsonify(chat_list)
+    except Exception as e:
+        return jsonify({"error": f"Error fetching chats: {str(e)}"}), 500
+    
+
+@app.route("/chats/<chat_id>", methods=["DELETE"])
+def delete_chat(chat_id):
+    """Delete a chat thread and its messages."""
+    try:
+        messages_ref = db.collection("chats").document(chat_id).collection("messages")
+        for msg in messages_ref.stream():
+            msg.reference.delete()
+
+        db.collection("chats").document(chat_id).delete()
+        return jsonify({"message": "Chat deleted successfully"})
+    except Exception as e:
+        return jsonify({"error": f"Error deleting chat: {str(e)}"}), 500
+    
+
+@app.route("/chats/<chat_id>/messages/<message_id>", methods=["DELETE"])
+def delete_message(chat_id, message_id):
+    """Delete a specific message within a chat."""
+    try:
+        db.collection("chats").document(chat_id).collection("messages").document(message_id).delete()
+        return jsonify({"message": "Message deleted successfully"})
+    except Exception as e:
+        return jsonify({"error": f"Error deleting message: {str(e)}"}), 500
+
 
 
 
