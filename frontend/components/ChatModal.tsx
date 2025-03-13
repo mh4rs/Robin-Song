@@ -12,7 +12,8 @@ import {
   TextInput, 
   Alert, 
   FlatList, 
-  ScrollView
+  ScrollView,
+  Image
 } from 'react-native';
 import colors from 'frontend/assets/theme/colors';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -48,6 +49,26 @@ const ChatModal: React.FC<ChatModalProps> = ({ visible, onClose }) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const typingDots = useRef(new Animated.Value(0)).current;
+
+  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchSuggestedQuestions = async () => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/bird-questions`);
+            if (response.ok) {
+                const data = await response.json();
+                setSuggestedQuestions(data.questions);
+            }
+        } catch (error) {
+            console.error("Error fetching suggested questions:", error);
+        }
+    };
+
+    if (visible || selectedChat === null) {
+        fetchSuggestedQuestions();
+    }
+  }, [visible, selectedChat]); 
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -158,8 +179,6 @@ const ChatModal: React.FC<ChatModalProps> = ({ visible, onClose }) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 message: message, 
-                system_prompt: "You are a birdwatching assistant answering with enthusiasm! Answer questions that are only related to birds with engaging, helpful responses. In your response, do not mention the fact that you are able to help—just answer the question with the constraints given. If a question is outside bird-related topics, respond politely, mentioning that you only answer bird-related questions. You are answering these bird-related questions as if you were the bird identified. Keep responses strictly 1-2 sentences long.",
-                max_tokens: 50 
             }),
         });
 
@@ -288,18 +307,18 @@ const handleSendMessage = async () => {
                 <ChatListScreen chats={chats} onSelectChat={setSelectedChat} onClose={() => setChatListVisible(false)} onSetChats={setChats} selectedChat={selectedChat} setSelectedChat={setSelectedChat} />
               ) : (
                 <>
-                  <View style={styles.topBarContainer}>
-                  <TouchableOpacity style={styles.newChatContainer} onPress={() => {
-                    setSelectedChat(null);
-                    setChatListVisible(true);
-                  }}>
-                    <Text style={styles.newChatText}>{selectedChat ? chats.find(c => c.id === selectedChat)?.title : 'New Chat'}</Text>
-                      <MaterialCommunityIcons name="chevron-down" size={20} color={colors.secondary} />
+                <View style={styles.topBarContainer}>
+                    <TouchableOpacity style={styles.newChatContainer} onPress={() => {
+                        setSelectedChat(null);
+                        setChatListVisible(true);
+                    }}>
+                        <Text style={styles.newChatText}>{selectedChat ? chats.find(c => c.id === selectedChat)?.title : 'New Chat'}</Text>
+                        <MaterialCommunityIcons name="chevron-down" size={20} color={colors.secondary} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-                      <Ionicons name="close" size={30} color={colors.primary} />
+                        <Ionicons name="close" size={30} color={colors.primary} />
                     </TouchableOpacity>
-                  </View>
+                </View>
                   <ScrollView 
                     ref={scrollViewRef}
                     contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 10, paddingBottom: 20 }}
@@ -331,17 +350,23 @@ const handleSendMessage = async () => {
                             </View>
                         ))
                     ) : (
-                        <View style={styles.homeScreen}>
-                            <Text style={styles.heading}>Hi Jodi, I'm Robin! Tweet Tweet!</Text>
-                            <Text style={styles.subHeading}>How can I help you?</Text>
-                            <Text style={styles.suggestionsHeading}>Suggestions</Text>
-                            <ChatQuestion title="What does a Robin eat?" onPress={() => startNewChat("What does a Robin eat?")} />
-                            <ChatQuestion title="Tell me about a Robin's life cycle." onPress={() => startNewChat("Tell me about a Robin's life cycle.")} />
-                            <ChatQuestion title="What is the most common region to find a Robin?" onPress={() => startNewChat("What is the most common region to find a Robin?")} />
-                            <ChatQuestion title="What are some species similar to Robins?" onPress={() => startNewChat("What are some species similar to Robins?")} />
-                        </View>
+                    <View style={styles.homeScreen}>
+                      <View style={styles.leftContainer}>
+                          <Image source={require('frontend/assets/img/chatbotlogo.png')} style={styles.chatbotImage} />
+                          <Text style={styles.heading}>Hi Jodi, I'm Robin! Tweet Tweet!</Text>
+                          <Text style={styles.subHeading}>How can I help you?</Text>
+                          <Text style={styles.suggestionsHeading}>Suggestions</Text>
+                  
+                          {suggestedQuestions.length > 0 ? (
+                              suggestedQuestions.map((question, index) => (
+                                  <ChatQuestion key={index} title={question} onPress={() => startNewChat(question)} />
+                              ))
+                          ) : (
+                              <Text style={styles.loadingText}>Loading suggestions...</Text>
+                          )}
+                      </View>
+                  </View>                  
                     )}
-
                     {isTyping && (
                         <View style={[styles.chatBubble, styles.aiBubble, { alignSelf: 'flex-start', flexDirection: 'row' }]}>
                             <Animated.Text style={[styles.chatText, { opacity: typingDots }]}>.</Animated.Text>
@@ -350,20 +375,22 @@ const handleSendMessage = async () => {
                         </View>
                     )}
                 </ScrollView>
+                <View style={styles.inputWrapper}>
                     <View style={styles.inputContainer}>
-                    <TextInput
-                      style={styles.inputField}
-                      placeholder="Ask me about birds..."
-                      placeholderTextColor={colors.accent}
-                      value={message}
-                      onChangeText={setMessage}
-                      onSubmitEditing={handleSendMessage}
-                      blurOnSubmit={false}
-                    />
-                      <TouchableOpacity style={styles.arrowButton} onPress={handleSendMessage}>
-                        <Ionicons name="arrow-up" size={25} color={colors.primary} />
-                      </TouchableOpacity>
+                        <TextInput
+                            style={styles.inputField}
+                            placeholder="Ask me about birds..."
+                            placeholderTextColor={colors.accent}
+                            value={message}
+                            onChangeText={setMessage}
+                            onSubmitEditing={handleSendMessage}
+                            blurOnSubmit={false}
+                        />
+                        <TouchableOpacity style={styles.arrowButton} onPress={handleSendMessage}>
+                            <Ionicons name="arrow-up" size={25} color={colors.primary} />
+                        </TouchableOpacity>
                     </View>
+                </View>
                 </>
               )}
             </View>
@@ -534,8 +561,11 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   closeButton: {
+    position: 'absolute',
+    right: 10,
+    top: 0, 
     backgroundColor: colors.accent,
-    borderRadius: 15,
+    borderRadius: 50,
     width: 30,
     height: 30,
     justifyContent: 'center',
@@ -587,7 +617,7 @@ const styles = StyleSheet.create({
   },
   suggestionsHeading: {
     fontFamily: 'Radio Canada',
-    fontSize: 16,
+    fontSize: 18, 
     color: colors.secondary,
     marginBottom: 10,
     textAlign: 'left',
@@ -687,14 +717,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignSelf: "flex-end",
   },
-  
   aiBubble: {
     backgroundColor: colors.secondary,
     alignSelf: "flex-start",
   },
   chatText: {
     fontFamily: "Radio Canada",
-    fontSize: 14,
+    fontSize: 16,
     color: colors.white,
   },
   homeScreen: {
@@ -707,7 +736,39 @@ const styles = StyleSheet.create({
     color: colors.accent,
     marginTop: 2,
     alignSelf: "flex-end",
-  },  
+  }, 
+  loadingText: {
+    fontFamily: "Radio Canada",
+    fontSize: 14,
+    color: colors.accent,
+    textAlign: "center",
+    marginTop: 10,
+  }, 
+  leftContainer: {
+    alignSelf: 'flex-start',
+    marginLeft: 20,
+    marginBottom: 40,
+  },
+  birdIcon: {
+      marginBottom: 10,
+  },
+  inputWrapper: {
+      position: 'absolute',
+      bottom: 15,
+      left: 20,
+      right: 20,
+  },
+  closeButtonWrapper: {
+      position: 'absolute',
+      right: 16,
+      top: 10, 
+  },
+  chatbotImage: {
+    width: 80,  
+    height: 80, 
+    resizeMode: 'contain',
+    marginBottom: 10,
+  },
 });
 
 export default ChatModal;

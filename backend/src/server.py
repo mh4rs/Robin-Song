@@ -549,20 +549,24 @@ def send_message_to_chat(chat_id):
         })
 
         system_prompt = (
-            "You are a birdwatching assistant answering with enthusiasm! "
-            "Answer questions that are only related to birds with engaging, helpful responses. "
+            "You are a birdwatching assistant answering with enthusiasm! You are roleplaying as the bird the user is asking about. "
+            "Keep your responses strictly 1-2 sentences long. Be concise but informative. "
+            "Answer questions that are only related to birds. "
             "If a question is outside bird-related topics, respond politely, mentioning that you only answer bird-related questions."
         )
 
-        example_context = [
+        example_messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": "What do birds eat?"},
-            {"role": "assistant", "content": "Birds enjoy a variety of foods, including seeds, berries, insects, and even small animals!"}
+            {"role": "user", "content": "Are you a territorial species?"},
+            {"role": "assistant", "content": "Yes, I'm quite territorial! I'll fiercely defend my nesting area and food from other birds or animals who come too close!"},
+            {"role": "user", "content": "What does a Robin eat?"},
+            {"role": "assistant", "content": "My diet is diverse and includes tasty seeds, nuts, insects, and berries—anything nutritious I can find!"}
         ]
 
         response = openai.ChatCompletion.create(
             model="gpt-4",
-            messages=example_context + [{"role": "user", "content": user_message}],
+            messages=example_messages + [{"role": "user", "content": user_message}],
+            max_tokens=75  # Limiting token count to encourage shorter responses
         )
 
         bot_message = response["choices"][0]["message"]["content"]
@@ -623,6 +627,49 @@ def delete_message(chat_id, message_id):
         return jsonify({"message": "Message deleted successfully"})
     except Exception as e:
         return jsonify({"error": f"Error deleting message: {str(e)}"}), 500
+    
+@app.route("/bird-questions", methods=["GET"])
+def get_bird_questions():
+    """Return a set of random bird-related questions for chat suggestions."""
+    try:
+        bird_questions = [
+            "What does a robin eat?",
+            "Where do robins build their nests?",
+            "How long do robins live?",
+            "Why do robins have red chests?",
+            "Do robins migrate in winter?",
+            "When do robins lay eggs?",
+            "How can I attract robins to my garden?",
+            "What sound does a robin make?",
+            "Are robins territorial birds?",
+            "How do robins find worms?",
+            "What predators do robins have?",
+            "Do male and female robins look different?",
+            "How many eggs do robins typically lay?",
+            "Do robins return to the same nest?",
+            "What birds stay active during winter?",
+            "How do birds navigate during migration?",
+            "What's the fastest flying bird?",
+            "How do birds sleep?",
+            "Why do birds sing in the morning?",
+            "How do birds stay warm in winter?",
+            "What's the difference between a hawk and a falcon?",
+            "How do hummingbirds hover?",
+            "Which birds are the best mimics?",
+            "What should I feed wild birds in my backyard?",
+            "How do birds communicate with each other?",
+            "What's the smartest bird species?",
+            "How do birds find their way home?",
+            "Why do birds flock together?",
+            "How do birds stay cool in summer?"
+        ]
+        
+        import random
+        selected_questions = random.sample(bird_questions, 4)
+        
+        return jsonify({"questions": selected_questions})
+    except Exception as e:
+        return jsonify({"error": f"Error fetching bird questions: {str(e)}"}), 500
 
 
 
