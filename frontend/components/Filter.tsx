@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Platform,
-} from "react-native";
+import {View, Text, StyleSheet, TouchableOpacity,} from "react-native";
 import Modal from "react-native-modal";
 import { Calendar } from "react-native-calendars";
 import Ionicons from "react-native-vector-icons/Ionicons";
@@ -25,26 +19,20 @@ interface FilterProps {
 }
 
 const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
-  // Modal visibility and filter state
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [selectedSpecies, setSelectedSpecies] = useState<string | null>(null);
-  // We'll store the date range as strings (in "YYYY-MM-DD" format) for the calendar, and later convert to Date objects
   const [range, setRange] = useState<{ start?: string; end?: string }>({});
 
-  // Handle species selection
   const handleSpeciesChange = (item: { label: string; value: string | number }) => {
     const speciesValue = String(item.value);
     setSelectedSpecies(speciesValue);
     onFilterChange("species", speciesValue);
   };
 
-  // When a day is pressed on the calendar, update the range
   const onDayPress = (day: any) => {
     if (!range.start || (range.start && range.end)) {
-      // Start a new range
       setRange({ start: day.dateString });
     } else {
-      // Set end date only if it is after start date; otherwise, restart range
       if (day.dateString >= range.start) {
         setRange({ start: range.start, end: day.dateString });
       } else {
@@ -53,7 +41,6 @@ const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
     }
   };
 
-  // Build the markedDates object for the Calendar
   const getMarkedDates = () => {
     const marked: { [key: string]: any } = {};
     if (range.start) {
@@ -76,7 +63,6 @@ const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
     return marked;
   };
 
-  // When "Apply" is pressed, convert the selected range to Date objects and call onFilterChange
   const applyFilters = () => {
     const start = range.start ? new Date(range.start) : null;
     const end = range.end ? new Date(range.end) : null;
@@ -84,7 +70,6 @@ const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
     setIsModalVisible(false);
   };
 
-  // Clear all filters
   const clearFilters = () => {
     setSelectedSpecies(null);
     setRange({});
@@ -94,7 +79,7 @@ const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
 
   return (
     <View style={styles.container}>
-      {/* Filter button to open the modal */}
+      {/* Filter button to open modal */}
       <TouchableOpacity
         style={styles.filterButton}
         onPress={() => setIsModalVisible(true)}
@@ -102,7 +87,7 @@ const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
         <MaterialCommunityIcons
           name="filter-variant"
           size={20}
-          color={colors.chatGPTCardBackground}
+          color={colors.white}
           style={styles.filterIcon}
         />
         <Text style={styles.filterButtonText}>Filter</Text>
@@ -117,12 +102,20 @@ const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
       >
         <View style={styles.modalContent}>
           <View style={styles.modalTopBar}>
-            <Text style={styles.modalTitle}>Filter Options</Text>
+            <View style={styles.titleContainer}>
+              <MaterialCommunityIcons
+                name="tune"
+                size={24}
+                color={colors.secondary}
+                style={styles.titleIcon}
+              />
+              <Text style={styles.modalTitle}>Filter Options</Text>
+            </View>
             <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setIsModalVisible(false)}
             >
-              <Ionicons name="close" size={30} color={colors.primary} />
+              <Ionicons name="close" size={30} color={colors.white} />
             </TouchableOpacity>
           </View>
 
@@ -137,15 +130,23 @@ const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
 
           {/* Date Range Filter */}
           <View style={styles.dateFilterContainer}>
-            <Text style={styles.label}>Select Date Range</Text>
+            <View style={styles.labelContainer}>
+              <MaterialCommunityIcons
+                name="calendar-range"
+                size={20}
+                color={colors.secondary}
+                style={styles.labelIcon}
+              />
+              <Text style={styles.label}>Select Date Range</Text>
+            </View>
             <Calendar
               onDayPress={onDayPress}
               markingType="period"
               markedDates={getMarkedDates()}
               style={styles.calendar}
               theme={{
-                backgroundColor: colors.background,
-                calendarBackground: "#f0f0f0",
+                calendarBackground: "#F5F5F5",
+                backgroundColor: "#F5F5F5",
                 textSectionTitleColor: colors.secondary,
                 selectedDayBackgroundColor: colors.accent,
                 selectedDayTextColor: "#ffffff",
@@ -170,12 +171,28 @@ const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
               onPress={clearFilters}
               variant="secondary"
               textStyle={{ fontSize: 16 }}
+              icon={
+                <MaterialCommunityIcons
+                  name="broom"
+                  size={20}
+                  color={colors.white}
+                  style={styles.buttonIcon}
+                />
+              }
             />
             <Button
               title="Apply"
               onPress={applyFilters}
               variant="primary"
               textStyle={{ fontSize: 16 }}
+              icon={
+                <MaterialCommunityIcons
+                  name="check"
+                  size={20}
+                  color={colors.white}
+                  style={styles.buttonIcon}
+                />
+              }
             />
           </View>
         </View>
@@ -193,12 +210,17 @@ const styles = StyleSheet.create({
   },
   filterButton: {
     backgroundColor: colors.accent,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
     borderRadius: 50,
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "flex-end",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   filterButtonText: {
     color: colors.white,
@@ -207,7 +229,7 @@ const styles = StyleSheet.create({
     fontFamily: "Radio Canada",
   },
   filterIcon: {
-    marginRight: 4,
+    marginRight: 8,
   },
   modal: {
     justifyContent: "center",
@@ -217,16 +239,28 @@ const styles = StyleSheet.create({
     width: "90%",
     padding: 20,
     backgroundColor: colors.background,
-    borderRadius: 15,
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   modalTopBar: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 15,
+    marginBottom: 20,
+  },
+  titleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  titleIcon: {
+    marginRight: 8,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
     fontFamily: "Radio Canada",
     color: colors.secondary,
@@ -238,26 +272,46 @@ const styles = StyleSheet.create({
     height: 30,
     justifyContent: "center",
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   dropdown: {
-    marginBottom: 15,
+    marginBottom: 20,
+  },
+  dropdownIcon: {
+    marginRight: 8,
   },
   dateFilterContainer: {
-    marginBottom: 15,
+    marginBottom: 20,
+  },
+  labelContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  labelIcon: {
+    marginRight: 8,
   },
   label: {
     fontSize: 16,
     fontWeight: "bold",
-    marginBottom: 8,
     color: colors.secondary,
   },
   calendar: {
-    borderRadius: 10,
+    borderRadius: 15,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
   },
   buttonRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 15,
+    marginTop: 20,
+  },
+  buttonIcon: {
+    marginRight: 8,
   },
 });
