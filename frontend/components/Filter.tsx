@@ -4,13 +4,12 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  Platform,
 } from "react-native";
 import Modal from "react-native-modal";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
-
+import { Calendar } from "react-native-calendars";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-
 import DropdownComponent from "./Dropdown";
 import Button from "./Button";
 import colors from "../assets/theme/colors";
@@ -26,60 +25,79 @@ interface FilterProps {
 }
 
 const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
-  const [isFilterModalVisible, setFilterModalVisible] = useState<boolean>(false);
-
-  // Filter states
+  // Modal visibility and filter state
+  const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [selectedSpecies, setSelectedSpecies] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
+  // We'll store the date range as strings (in "YYYY-MM-DD" format) for the calendar, and later convert to Date objects
+  const [range, setRange] = useState<{ start?: string; end?: string }>({});
 
-  // Track date picker visibility
-  const [datePickerType, setDatePickerType] = useState<"start" | "end" | null>(null);
-
-  // =============== SPECIES HANDLING ===============
+  // Handle species selection
   const handleSpeciesChange = (item: { label: string; value: string | number }) => {
     const speciesValue = String(item.value);
     setSelectedSpecies(speciesValue);
     onFilterChange("species", speciesValue);
   };
 
-  // =============== DATE PICKER: CANCEL / CONFIRM ===============
-  const handleDateConfirm = (date: Date) => {
-    if (datePickerType === "start") {
-      setStartDate(date);
-      onFilterChange("date", { start: date, end: endDate });
-    } else if (datePickerType === "end") {
-      setEndDate(date);
-      onFilterChange("date", { start: startDate, end: date });
+  // When a day is pressed on the calendar, update the range
+  const onDayPress = (day: any) => {
+    if (!range.start || (range.start && range.end)) {
+      // Start a new range
+      setRange({ start: day.dateString });
+    } else {
+      // Set end date only if it is after start date; otherwise, restart range
+      if (day.dateString >= range.start) {
+        setRange({ start: range.start, end: day.dateString });
+      } else {
+        setRange({ start: day.dateString });
+      }
     }
-    setDatePickerType(null); // Close the picker
   };
 
-  const handleDateCancel = () => {
-    setDatePickerType(null);
+  // Build the markedDates object for the Calendar
+  const getMarkedDates = () => {
+    const marked: { [key: string]: any } = {};
+    if (range.start) {
+      marked[range.start] = { startingDay: true, color: colors.accent, textColor: "#ffffff" };
+    }
+    if (range.end) {
+      marked[range.end] = { endingDay: true, color: colors.accent, textColor: "#ffffff" };
+    }
+    if (range.start && range.end) {
+      let current = new Date(range.start);
+      const end = new Date(range.end);
+      while (current <= end) {
+        const dateString = current.toISOString().split("T")[0];
+        if (dateString !== range.start && dateString !== range.end) {
+          marked[dateString] = { color: colors.accent, textColor: "#ffffff" };
+        }
+        current.setDate(current.getDate() + 1);
+      }
+    }
+    return marked;
   };
 
-  // =============== CLEAR & APPLY FILTERS ===============
+  // When "Apply" is pressed, convert the selected range to Date objects and call onFilterChange
+  const applyFilters = () => {
+    const start = range.start ? new Date(range.start) : null;
+    const end = range.end ? new Date(range.end) : null;
+    onFilterChange("date", { start, end });
+    setIsModalVisible(false);
+  };
+
+  // Clear all filters
   const clearFilters = () => {
     setSelectedSpecies(null);
-    setStartDate(null);
-    setEndDate(null);
-
+    setRange({});
     onFilterChange("species", null);
     onFilterChange("date", null);
   };
 
-  const applyFilters = () => {
-    onFilterChange("date", { start: startDate, end: endDate });
-    setFilterModalVisible(false);
-  };
-
   return (
     <View style={styles.container}>
-      {/* Button that opens the Filter modal */}
+      {/* Filter button to open the modal */}
       <TouchableOpacity
         style={styles.filterButton}
-        onPress={() => setFilterModalVisible(true)}
+        onPress={() => setIsModalVisible(true)}
       >
         <MaterialCommunityIcons
           name="filter-variant"
@@ -90,12 +108,11 @@ const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
         <Text style={styles.filterButtonText}>Filter</Text>
       </TouchableOpacity>
 
-      {/* The Filter Modal */}
+      {/* Filter Modal */}
       <Modal
-        isVisible={isFilterModalVisible}
+        isVisible={isModalVisible}
+        onBackdropPress={() => setIsModalVisible(false)}
         backdropOpacity={0.5}
-        useNativeDriver={false}
-        onBackdropPress={() => setFilterModalVisible(false)}
         style={styles.modal}
       >
         <View style={styles.modalContent}>
@@ -103,13 +120,13 @@ const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
             <Text style={styles.modalTitle}>Filter Options</Text>
             <TouchableOpacity
               style={styles.closeButton}
-              onPress={() => setFilterModalVisible(false)}
+              onPress={() => setIsModalVisible(false)}
             >
               <Ionicons name="close" size={30} color={colors.primary} />
             </TouchableOpacity>
           </View>
 
-          {/* Species dropdown */}
+          {/* Species Filter */}
           <DropdownComponent
             data={speciesList}
             value={selectedSpecies}
@@ -118,59 +135,56 @@ const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
             style={styles.dropdown}
           />
 
-          {/* Date Range section */}
+          {/* Date Range Filter */}
           <View style={styles.dateFilterContainer}>
-            <Text style={styles.label}>Date Range</Text>
-
-            <Button
-              title={
-                startDate
-                  ? `Start: ${startDate.toLocaleDateString()}`
-                  : "Select Start Date"
-              }
-              onPress={() => setDatePickerType("start")}
-              variant="secondary"
-              textStyle={{ fontSize: 16 }}
-            />
-
-            <Button
-              title={
-                endDate
-                  ? `End: ${endDate.toLocaleDateString()}`
-                  : "Select End Date"
-              }
-              onPress={() => setDatePickerType("end")}
-              variant="secondary"
-              textStyle={{ fontSize: 16 }}
+            <Text style={styles.label}>Select Date Range</Text>
+            <Calendar
+              onDayPress={onDayPress}
+              markingType="period"
+              markedDates={getMarkedDates()}
+              style={styles.calendar}
+              theme={{
+                backgroundColor: colors.background,
+                calendarBackground: "#f0f0f0",
+                textSectionTitleColor: colors.secondary,
+                selectedDayBackgroundColor: colors.accent,
+                selectedDayTextColor: "#ffffff",
+                todayTextColor: colors.primary,
+                dayTextColor: colors.text,
+                textDisabledColor: "#d9e1e8",
+                dotColor: colors.accent,
+                selectedDotColor: "#ffffff",
+                arrowColor: colors.primary,
+                monthTextColor: colors.secondary,
+                indicatorColor: colors.primary,
+                textDayFontFamily: "Radio Canada",
+                textMonthFontFamily: "Caprasimo",
+                textDayHeaderFontFamily: "Radio Canada",
+              }}
             />
           </View>
 
-          {/* Clear & Apply Buttons */}
-          <Button
-            title="Clear Filters"
-            onPress={clearFilters}
-            variant="secondary"
-            textStyle={{ fontSize: 16 }}
-          />
-          <Button
-            title="Apply"
-            onPress={applyFilters}
-            variant="primary"
-            textStyle={{ fontSize: 16 }}
-          />
+          <View style={styles.buttonRow}>
+            <Button
+              title="Clear Filters"
+              onPress={clearFilters}
+              variant="secondary"
+              textStyle={{ fontSize: 16 }}
+            />
+            <Button
+              title="Apply"
+              onPress={applyFilters}
+              variant="primary"
+              textStyle={{ fontSize: 16 }}
+            />
+          </View>
         </View>
       </Modal>
-
-      {/* The separate date-time picker (not nested in the filter modal) */}
-      <DateTimePickerModal
-        isVisible={!!datePickerType}
-        mode="date"
-        onConfirm={handleDateConfirm}
-        onCancel={handleDateCancel}
-      />
     </View>
   );
 };
+
+export default Filter;
 
 const styles = StyleSheet.create({
   container: {
@@ -200,7 +214,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    width: "85%",
+    width: "90%",
     padding: 20,
     backgroundColor: colors.background,
     borderRadius: 15,
@@ -235,7 +249,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 8,
+    color: colors.secondary,
+  },
+  calendar: {
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 15,
   },
 });
-
-export default Filter;
