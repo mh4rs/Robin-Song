@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   SafeAreaView,
   View,
@@ -8,15 +9,18 @@ import {
   ActivityIndicator,
   FlatList,
   TouchableOpacity,
+  Button,
   Alert,
   Linking,
 } from "react-native";
 import { collection, query, orderBy, limit, startAfter, getDocs, where } from "firebase/firestore";
-import axios from "axios";
 import { db } from "../../database/firebaseConfig";
 import SearchBar from "../components/SearchBar";
 import Filter from "../components/Filter";
+import Filter from "../components/Filter";
 import colors from "../assets/theme/colors";
+import axios from "axios";
+import debounce from "lodash.debounce";
 import axios from "axios";
 import debounce from "lodash.debounce";
 
@@ -32,6 +36,13 @@ interface BirdData {
   imageUrl: string;
   audubonUrl: string;
 }
+
+interface BirdSection {
+  title: string;
+  data: BirdHistory[];
+}
+
+const PAGE_SIZE = 20;
 
 interface BirdSection {
   title: string;
@@ -78,7 +89,7 @@ const HistoryScreen: React.FC = () => {
       }
 
       const snapshot = await getDocs(q);
-      const birdData = snapshot.docs.map((doc) => ({
+      let birdData = snapshot.docs.map((doc) => ({
         id: doc.id,
         bird: doc.data().bird || "Unknown Bird",
         latitude: doc.data().latitude || 0,
@@ -92,11 +103,16 @@ const HistoryScreen: React.FC = () => {
         );
       }
 
+      if (search) {
+        birdData = birdData.filter((bird) =>
+          bird.bird.toLowerCase().includes(search.toLowerCase())
+        );
+      }
+
       const newBirds = reset ? birdData : [...birds, ...birdData];
       setBirds(newBirds);
       setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
       setHasMore(snapshot.docs.length === PAGE_SIZE);
-      applySearch(newBirds);
     } catch (error) {
       console.error("Error fetching birds:", error);
     } finally {
@@ -105,46 +121,43 @@ const HistoryScreen: React.FC = () => {
     }
   };
 
-  const applySearch = (data = birds) => {
-    if (!search) {
-      setFilteredBirds(data);
-      setGroupedBirds(groupByMonth(data));
-      return;
-    }
+  // Fetch data for new birds
+  useEffect(() => {
+    fetchBirds(true); // Initial fetch
+  }, [search, selectedSpecies]);
 
-    const fuse = new Fuse(data, { keys: ["bird"], threshold: 0.3 });
-    const result = fuse.search(search).map((res) => res.item);
-    setFilteredBirds(result);
-    setGroupedBirds(groupByMonth(result));
-  };
-
-  const fetchBirdData = async (birdName: string) => {
+  // Fetch image and Audubon URL for each bird
+  const fetchDataForBird = async (birdName: string) => {
     try {
-      const response = await axios.get<{ url: string }>(
+      const infoRes = await axios.get<{ url: string }>(
         "http://192.168.1.108:5000/bird-info",
         { params: { bird: birdName } }
       );
+      const audubonUrl = infoRes.data.url || "";
 
-      const audubonUrl = response.data.url || "";
-      let imageUrl = "";
-
-      if (audubonUrl) {
-        const scrapeResponse = await axios.get<{ image_url?: string }>(
-          "http://192.168.1.108:5000/scrape-bird-info",
-          { params: { url: audubonUrl } }
-        );
-        imageUrl = scrapeResponse.data.image_url || "";
+      if (!audubonUrl) {
+        setBirdDataMap((prev) => ({
+          ...prev,
+          [birdName]: { imageUrl: "", audubonUrl: "https://www.audubon.org" },
+        }));
+        return;
       }
+
+      const scrapeRes = await axios.get<{ image_url?: string }>(
+        "http://192.168.1.108:5000/scrape-bird-info",
+        { params: { url: audubonUrl } }
+      );
+      const imageUrl = scrapeRes.data.image_url || "";
 
       setBirdDataMap((prev) => ({
         ...prev,
         [birdName]: { imageUrl, audubonUrl },
       }));
-    } catch (error) {
-      console.error(`Error fetching data for ${birdName}:`, error);
+    } catch (error: any) {
+      console.error("Error fetching data for bird:", birdName, error);
       setBirdDataMap((prev) => ({
         ...prev,
-        [birdName]: { imageUrl: "", audubonUrl: "" },
+        [birdName]: { imageUrl: "", audubonUrl: "https://www.audubon.org" },
       }));
     }
   };
@@ -263,8 +276,16 @@ const HistoryScreen: React.FC = () => {
         const imageUrl = data.imageUrl;
         const audubonUrl = data.audubonUrl;
 
+        const data = birdDataMap[bird.bird] || { imageUrl: "", audubonUrl: "" };
+        const imageUrl = data.imageUrl;
+        const audubonUrl = data.audubonUrl;
+
         return (
           <View style={styles.historyCard} key={bird.id}>
+            <Image
+              source={imageUrl ? { uri: imageUrl } : require("../assets/img/no-image.png")}
+              style={styles.birdImage}
+            />
             <Image
               source={imageUrl ? { uri: imageUrl } : require("../assets/img/no-image.png")}
               style={styles.birdImage}
@@ -282,12 +303,33 @@ const HistoryScreen: React.FC = () => {
                 <Text style={[styles.birdName, { textDecorationLine: "underline" }]}>
                   {bird.bird}
                 </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  if (audubonUrl) {
+                    Linking.openURL(audubonUrl);
+                  } else {
+                    Alert.alert("No Audubon page found for this bird.");
+                  }
+                }}
+              >
+                <Text style={[styles.birdName, { textDecorationLine: "underline" }]}>
+                  {bird.bird}
+                </Text>
               </TouchableOpacity>
+              <Text style={styles.birdLocation}>
+                Lat: {bird.latitude}, Lon: {bird.longitude}
+              </Text>
               <Text style={styles.birdLocation}>
                 Lat: {bird.latitude}, Lon: {bird.longitude}
               </Text>
             </View>
             <View style={styles.entryTime}>
+              <Text style={styles.entryDate}>
+                {bird.timestamp.toLocaleDateString()}
+              </Text>
+              <Text style={styles.entryHour}>
+                {bird.timestamp.toLocaleTimeString()}
+              </Text>
               <Text style={styles.entryDate}>
                 {bird.timestamp.toLocaleDateString()}
               </Text>

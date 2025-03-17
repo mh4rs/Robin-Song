@@ -11,7 +11,7 @@ interface DropdownProps {
   placeholder?: string;
   maxHeight?: number;
   style?: object;
-  icon?: React.ReactNode; // Add the icon prop
+  icon?: React.ReactNode; 
   searchable?: boolean; // Add search functionality
 }
 
@@ -23,13 +23,11 @@ const DropdownComponent: React.FC<DropdownProps> = ({
   maxHeight = 300,
   style,
   icon,
-  searchable = false, // Enable search functionality
+  searchable = false, 
 }) => {
   const [searchText, setSearchText] = useState("");
   const [isFocused, setIsFocused] = useState(false);
-  const fadeAnim = useState(new Animated.Value(0))[0]; // Animation for focus
-
-  // Filter data based on search text
+  const fadeAnim = useState(new Animated.Value(0))[0]; 
   const filteredData = searchable
     ? data.filter((item) =>
         item.label.toLowerCase().includes(searchText.toLowerCase())
@@ -67,7 +65,7 @@ const DropdownComponent: React.FC<DropdownProps> = ({
         style={[
           styles.dropdown,
           style,
-          isFocused && { borderColor: colors.primary }, // Highlight when focused
+          isFocused && { borderColor: colors.primary },
         ]}
         containerStyle={styles.container}
         placeholderStyle={styles.placeholderStyle}
@@ -85,10 +83,10 @@ const DropdownComponent: React.FC<DropdownProps> = ({
         renderItem={renderItem}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        search={searchable} // Enable search functionality
+        search={searchable} 
         searchPlaceholder="Search..."
-        onChangeText={searchable ? setSearchText : undefined} // Handle search input
-        inputSearchStyle={styles.searchInput} // Style for search input
+        onChangeText={searchable ? setSearchText : undefined}
+        inputSearchStyle={styles.searchInput} 
       />
     </View>
   );
@@ -102,10 +100,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   iconContainer: {
-    marginRight: 8, // Add spacing between the icon and the dropdown
+    marginRight: 8, 
   },
   dropdown: {
-    flex: 1, // Allow the dropdown to take up remaining space
+    flex: 1, 
     margin: 12,
     height: 50,
     backgroundColor: colors.card,
