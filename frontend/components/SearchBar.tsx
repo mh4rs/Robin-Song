@@ -27,7 +27,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ label, search, setSearch, onSearc
     return (
         <View 
           accessible={true}
-          accessibilityRole='search'
+          accessibilityLabel='Search field'
           style={styles.searchContainer}
         >
           <TouchableOpacity style={styles.searchIconContainer} onPress={handleSearch}>

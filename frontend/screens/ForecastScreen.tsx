@@ -13,7 +13,6 @@ import axios from 'axios';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import DropdownComponent from '../components/Dropdown';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import colors from '../assets/theme/colors';
 import { Platform } from 'react-native';
 
@@ -154,17 +153,19 @@ const ForecastScreen: React.FC = () => {
       >
         <View style={styles.preferenceContainer}>
           <View style={styles.preferenceLabel}>
-            <Text style={styles.preferenceText}>Bird Preference</Text>
+            <Text accessibilityRole="header" style={styles.preferenceText}>Bird Preference</Text>
           </View>
-          <DropdownComponent
-            data={birdOptions}
-            value={selectedValue}
-            onChange={(item) => setSelectedValue(String(item.value))}
-            placeholder="Select a species"
-          />
+          <View style={{ width: '100%' }}>
+            <DropdownComponent
+              data={birdOptions}
+              value={selectedValue}
+              onChange={(item) => setSelectedValue(String(item.value))}
+              placeholder="Select a species"
+            />
+          </View>
         </View>
 
-        <Text style={styles.greeting}>Good Morning, Jodi!</Text>
+        <Text style={styles.greeting}>Hello, Jodi!</Text>
         <Text style={styles.description}>
           You are most likely to see <Text style={styles.highlight}>{selectedValue}</Text> at this location today:
         </Text>
@@ -173,26 +174,32 @@ const ForecastScreen: React.FC = () => {
           <ActivityIndicator size="large" color={colors.primary} />
         ) : hotspot ? (
           <>
-            <Text style={styles.locationName}>{hotspot.location}</Text>
-            <MapView
-              provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-              style={styles.map}
-              initialRegion={{
-                latitude: hotspot.lat,
-                longitude: hotspot.lon,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-              }}
-              onPress={() => {
-                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${hotspot.lat},${hotspot.lon}`;
-                Linking.openURL(mapsUrl);
-              }}
+            <View
+              accessible={true}
+              accessibilityRole="summary"
+              accessibilityLabel={`${hotspot.location}. Double tap to open an external map for this location.`}
             >
-              <Marker
-                coordinate={{ latitude: hotspot.lat, longitude: hotspot.lon }}
-                title={hotspot.location}
-              />
-            </MapView>
+              <Text style={styles.locationName}>{hotspot.location}</Text>
+              <MapView
+                provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+                style={styles.map}
+                initialRegion={{
+                  latitude: hotspot.lat,
+                  longitude: hotspot.lon,
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
+                }}
+                onPress={() => {
+                  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${hotspot.lat},${hotspot.lon}`;
+                  Linking.openURL(mapsUrl);
+                }}
+              >
+                <Marker
+                  coordinate={{ latitude: hotspot.lat, longitude: hotspot.lon }}
+                  title={hotspot.location}
+                />
+              </MapView>
+            </View>
           </>
         ) : (
           <Text style={styles.noDataText}>No data available for this bird at this time.</Text>

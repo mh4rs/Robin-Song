@@ -128,9 +128,20 @@ const HistoryScreen: React.FC = () => {
 
   const renderItem = ({ item }: { item: { title: string; data: BirdHistory[] } }) => (
     <View style={styles.monthContainer}>
-      <Text style={styles.monthHeader}>{item.title}</Text>
+      <Text 
+        accessibilityRole='header'
+        accessibilityHint={`Scroll through the entries under this heading to access the birds you identified in ${item.title}`}
+        style={styles.monthHeader}
+      >
+        {item.title}
+      </Text>
       {item.data.map((bird) => (
-        <View style={styles.historyCard} key={bird.id}>
+        <View 
+          accessible={true}
+          accessibilityLabel={`${bird.bird} identified on ${bird.timestamp.toLocaleDateString()} at ${bird.timestamp.toLocaleTimeString()}`}
+          style={styles.historyCard} 
+          key={bird.id}
+        >
           <Image source={require("../assets/img/robin.png")} style={styles.birdImage} />
           <View style={styles.entryDetails}>
             <Text style={styles.birdName}>{bird.bird}</Text>
@@ -154,7 +165,8 @@ const HistoryScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.topBar}>
-          <SearchBar label="Search..."
+          <SearchBar 
+            label="Search..."
             search={search}
             setSearch={(value) => {
               setSearch(value);

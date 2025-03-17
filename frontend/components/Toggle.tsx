@@ -49,12 +49,13 @@ const Toggle: React.FC<ToggleProps> = ({ title, startIcon, value, description, o
               {title}
           </Text>
         </View>
+        
         <View style={styles.toggleContainer}>
           <Switch
             accessible={true}
             accessibilityRole='switch'
-            accessibilityState={{ checked: isToggled }}
-            accessibilityHint={`Double tap to ${isToggled ? 'disable' : 'enable'} ${title.replace(/^(Enable|Disable)\s+/i, '').toLowerCase()}`}
+            accessibilityState={{ checked: value }}
+            accessibilityHint={`Double tap to ${value ? 'disable' : 'enable'} ${title.replace(/^(Enable|Disable)\s+/i, '').toLowerCase()}`}
             value={value}
             onValueChange={onToggle}
             thumbColor={colors.bottomnav}
@@ -62,31 +63,22 @@ const Toggle: React.FC<ToggleProps> = ({ title, startIcon, value, description, o
           />
         </View>
       </View>
-      <TouchableOpacity
-        accessible={true}
-        accessibilityRole='button'
-        accessibilityLabel="Purpose of toggle"
-        accessibilityState={{ expanded: showDescription }}
-        accessibilityHint={`Double tap to ${showDescription ? 'collapse' : 'expand'} the description for this toggle button`}
-        style={styles.infoBox} 
-        onPress={toggleDescription}
-      >
       {description ? (
-        <TouchableOpacity style={styles.infoBox} onPress={toggleDescription}>
+        <TouchableOpacity
+          accessible={true}
+          accessibilityRole='button'
+          accessibilityLabel="Purpose of toggle"
+          accessibilityState={{ expanded: showDescription }}
+          accessibilityHint={`Double tap to ${showDescription ? 'collapse' : 'expand'} the description for this toggle button`}
+          style={styles.infoBox} 
+          onPress={toggleDescription}
+        >
           <MaterialCommunityIcons
             name="information-outline"
             size={24}
             color={colors.accent}
             style={styles.iconStart}
           />
-        <Text style={styles.infoText}>What is this?</Text>
-      </TouchableOpacity>
-      {showDescription && (
-        <View
-          accessibilityLabel={description}
-          accessibilityRole='text'
-          style={styles.descriptionContainer}
-        >
           <Text style={styles.infoText}>What is this?</Text>
         </TouchableOpacity>
       ) : null}
