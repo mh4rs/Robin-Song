@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 15,
     backgroundColor: colors.accent,
-    padding: 15,
+    padding: 8,
     borderWidth: 1,
     borderColor: 'rgba(192, 72, 58, 0.2)',
     borderRadius: 50,
@@ -63,8 +63,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   logoImage: {
-    width: 40,
-    height: 40,
+    width: 45,
+    height: 45,
     resizeMode: 'contain',
   },
 });

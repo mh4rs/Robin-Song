@@ -364,7 +364,7 @@ const handleSendMessage = async () => {
                           source={require('frontend/assets/img/chatbotlogo.png')}
                           style={styles.chatbotImage}
                         />
-                        <Text style={styles.heading}>Hi Jodi, I'm Robin! Tweet Tweet!</Text>
+                        <Text style={styles.heading}>Hi Jodi, I'm Robin!</Text>
                         <Text style={styles.subHeading}>How can I help you?</Text>
                         <Text style={styles.suggestionsHeading}>Suggestions</Text>
   
@@ -729,17 +729,17 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   userBubble: {
-    backgroundColor: colors.primary,
+    backgroundColor: `${colors.accent}80`,
     alignSelf: "flex-end",
   },
   aiBubble: {
-    backgroundColor: colors.secondary,
+    backgroundColor: `${colors.secondary}80`,
     alignSelf: "flex-start",
   },
   chatText: {
     fontFamily: "Radio Canada",
     fontSize: 16,
-    color: colors.white,
+    color: colors.black,
   },
   homeScreen: {
     alignItems: 'center',
@@ -748,7 +748,8 @@ const styles = StyleSheet.create({
   },  
   chatTimestamp: {
     fontSize: 10,
-    color: colors.accent,
+    fontFamily: 'Radio Canada',
+    color: `${colors.black}80`,
     marginTop: 2,
     alignSelf: "flex-end",
   }, 
@@ -761,7 +762,7 @@ const styles = StyleSheet.create({
   }, 
   leftContainer: {
     alignSelf: 'flex-start',
-    marginLeft: 20,
+    marginLeft: 10,
     marginBottom: 40,
   },
   birdIcon: {

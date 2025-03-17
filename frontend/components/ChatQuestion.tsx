@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
   button: {
     paddingVertical: 8,
     paddingHorizontal: 8,
-    backgroundColor: '#C0483A',
+    backgroundColor: `${colors.accent}90`,
     borderRadius: 20,
     justifyContent: 'center',
     marginVertical: 6,
@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontFamily: 'Radio Canada',
-    color: '#FFF8F4',
+    color: colors.black,
   },
 });
 
