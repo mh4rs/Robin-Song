@@ -1,29 +1,15 @@
-import React, { useState, useEffect, useCallback } from "react";
-import React, { useState, useEffect, useCallback } from "react";
-import {
-  SafeAreaView,
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  ActivityIndicator,
-  FlatList,
-  TouchableOpacity,
-  Button,
-  Alert,
-  Linking,
-} from "react-native";
-import { collection, query, orderBy, limit, startAfter, getDocs, where } from "firebase/firestore";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import {SafeAreaView, View,Text, StyleSheet, Image, ActivityIndicator, SectionList,TouchableOpacity,Alert, Linking,} from "react-native";
+import {collection, query, orderBy,limit, startAfter, getDocs, where} from "firebase/firestore";
 import { db } from "../../database/firebaseConfig";
 import SearchBar from "../components/SearchBar";
-import Filter from "../components/Filter";
 import Filter from "../components/Filter";
 import colors from "../assets/theme/colors";
 import axios from "axios";
 import debounce from "lodash.debounce";
-import axios from "axios";
-import debounce from "lodash.debounce";
+import Fuse from "fuse.js";
 
+// Firestore bird interface
 interface BirdHistory {
   id: string;
   bird: string;
@@ -44,13 +30,6 @@ interface BirdSection {
 
 const PAGE_SIZE = 20;
 
-interface BirdSection {
-  title: string;
-  data: BirdHistory[];
-}
-
-const PAGE_SIZE = 20;
-
 const HistoryScreen: React.FC = () => {
   const [birds, setBirds] = useState<BirdHistory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,10 +42,8 @@ const HistoryScreen: React.FC = () => {
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [birdDataMap, setBirdDataMap] = useState<{ [birdName: string]: BirdData }>({});
 
-  // Fetch birds from Firestore
   const fetchBirds = async (reset = false) => {
     if (!hasMore && !reset) return;
-
     try {
       reset ? setLoading(true) : setLoadingMore(true);
 
@@ -81,7 +58,11 @@ const HistoryScreen: React.FC = () => {
       }
 
       if (startDate || endDate) {
-        q = query(q, where("timestamp", ">=", startDate || new Date(0)), where("timestamp", "<=", endDate || new Date()));
+        q = query(
+          q,
+          where("timestamp", ">=", startDate || new Date(0)),
+          where("timestamp", "<=", endDate || new Date())
+        );
       }
 
       if (!reset && lastDoc) {
@@ -89,7 +70,7 @@ const HistoryScreen: React.FC = () => {
       }
 
       const snapshot = await getDocs(q);
-      let birdData = snapshot.docs.map((doc) => ({
+      const fetchedBirds = snapshot.docs.map((doc) => ({
         id: doc.id,
         bird: doc.data().bird || "Unknown Bird",
         latitude: doc.data().latitude || 0,
@@ -97,19 +78,7 @@ const HistoryScreen: React.FC = () => {
         timestamp: doc.data().timestamp?.toDate() || new Date(),
       }));
 
-      if (search) {
-        birdData = birdData.filter((bird) =>
-          bird.bird.toLowerCase().includes(search.toLowerCase())
-        );
-      }
-
-      if (search) {
-        birdData = birdData.filter((bird) =>
-          bird.bird.toLowerCase().includes(search.toLowerCase())
-        );
-      }
-
-      const newBirds = reset ? birdData : [...birds, ...birdData];
+      const newBirds = reset ? fetchedBirds : [...birds, ...fetchedBirds];
       setBirds(newBirds);
       setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
       setHasMore(snapshot.docs.length === PAGE_SIZE);
@@ -121,98 +90,6 @@ const HistoryScreen: React.FC = () => {
     }
   };
 
-  // Fetch data for new birds
-  useEffect(() => {
-    fetchBirds(true); // Initial fetch
-  }, [search, selectedSpecies]);
-
-  // Fetch image and Audubon URL for each bird
-  const fetchDataForBird = async (birdName: string) => {
-    try {
-      const infoRes = await axios.get<{ url: string }>(
-        "http://192.168.1.108:5000/bird-info",
-        { params: { bird: birdName } }
-      );
-      const audubonUrl = infoRes.data.url || "";
-
-      if (!audubonUrl) {
-        setBirdDataMap((prev) => ({
-          ...prev,
-          [birdName]: { imageUrl: "", audubonUrl: "https://www.audubon.org" },
-        }));
-        return;
-      }
-
-      const scrapeRes = await axios.get<{ image_url?: string }>(
-        "http://192.168.1.108:5000/scrape-bird-info",
-        { params: { url: audubonUrl } }
-      );
-      const imageUrl = scrapeRes.data.image_url || "";
-
-      setBirdDataMap((prev) => ({
-        ...prev,
-        [birdName]: { imageUrl, audubonUrl },
-      }));
-    } catch (error: any) {
-      console.error("Error fetching data for bird:", birdName, error);
-      setBirdDataMap((prev) => ({
-        ...prev,
-        [birdName]: { imageUrl: "", audubonUrl: "https://www.audubon.org" },
-      }));
-    }
-  };
-
-  // Fetch data for new birds
-  useEffect(() => {
-    fetchBirds(true); // Initial fetch
-  }, [search, selectedSpecies, startDate, endDate]);
-
-  // Fetch image and Audubon URL for each bird
-  const fetchDataForBird = async (birdName: string) => {
-    try {
-      const infoRes = await axios.get<{ url: string }>(
-        "http://192.168.1.108:5000/bird-info",
-        { params: { bird: birdName } }
-      );
-      const audubonUrl = infoRes.data.url || "";
-
-      if (!audubonUrl) {
-        setBirdDataMap((prev) => ({
-          ...prev,
-          [birdName]: { imageUrl: "", audubonUrl: "https://www.audubon.org" },
-        }));
-        return;
-      }
-
-      const scrapeRes = await axios.get<{ image_url?: string }>(
-        "http://192.168.1.108:5000/scrape-bird-info",
-        { params: { url: audubonUrl } }
-      );
-      const imageUrl = scrapeRes.data.image_url || "";
-
-      setBirdDataMap((prev) => ({
-        ...prev,
-        [birdName]: { imageUrl, audubonUrl },
-      }));
-    } catch (error: any) {
-      console.error("Error fetching data for bird:", birdName, error);
-      setBirdDataMap((prev) => ({
-        ...prev,
-        [birdName]: { imageUrl: "", audubonUrl: "https://www.audubon.org" },
-      }));
-    }
-  };
-
-  // Fetch data for new birds
-  useEffect(() => {
-    const uniqueBirdNames = Array.from(new Set(birds.map((b) => b.bird)));
-    const missingBirdNames = uniqueBirdNames.filter((name) => !(name in birdDataMap));
-    missingBirdNames.forEach((birdName) => {
-      fetchDataForBird(birdName);
-    });
-  }, [birds, birdDataMap]);
-
-  // Handle search with debounce
   const debouncedSearch = useCallback(
     debounce((query: string) => {
       setSearch(query);
@@ -224,13 +101,94 @@ const HistoryScreen: React.FC = () => {
     debouncedSearch(query);
   };
 
-  // Handle filter changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchBirds(true);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [selectedSpecies, startDate, endDate]);
+
+  const fetchDataForBird = async (birdName: string) => {
+    try {
+      const infoRes = await axios.get<{ url: string }>(
+        "http://192.168.1.108:5000/bird-info",
+        { params: { bird: birdName } }
+      );
+      const audubonUrl = infoRes.data.url || "";
+      if (!audubonUrl) {
+        setBirdDataMap((prev) => ({
+          ...prev,
+          [birdName]: { imageUrl: "", audubonUrl: "https://www.audubon.org" },
+        }));
+        return;
+      }
+      const scrapeRes = await axios.get<{ image_url?: string }>(
+        "http://192.168.1.108:5000/scrape-bird-info",
+        { params: { url: audubonUrl } }
+      );
+      const imageUrl = scrapeRes.data.image_url || "";
+      setBirdDataMap((prev) => ({
+        ...prev,
+        [birdName]: { imageUrl, audubonUrl },
+      }));
+    } catch (error: any) {
+      console.error("Error fetching data for bird:", birdName, error);
+      setBirdDataMap((prev) => ({
+        ...prev,
+        [birdName]: { imageUrl: "", audubonUrl: "https://www.audubon.org" },
+      }));
+    }
+  };
+
+  useEffect(() => {
+    const uniqueBirdNames = Array.from(new Set(birds.map((b) => b.bird)));
+    const missingBirdNames = uniqueBirdNames.filter((name) => !(name in birdDataMap));
+    missingBirdNames.forEach((birdName) => {
+      fetchDataForBird(birdName);
+    });
+  }, [birds, birdDataMap]);
+
+
+  const fuse = useMemo(() => new Fuse(birds, { keys: ["bird"], threshold: 0.3 }), [birds]);
+  const filteredBirds = useMemo(() => {
+    if (!search) return birds;
+    const searchLower = search.trim().toLowerCase();
+    const exactMatches = birds.filter(
+      (bird) => bird.bird.toLowerCase() === searchLower
+    );
+    if (exactMatches.length > 0) {
+      return exactMatches;
+    }
+    return fuse.search(search).map((result) => result.item);
+  }, [search, birds, fuse]);
+
+  const groupByMonth = useCallback((data: BirdHistory[]): BirdSection[] => {
+    const grouped: { [key: string]: BirdHistory[] } = {};
+    data.forEach((item) => {
+      const month = item.timestamp.toLocaleString("default", { month: "long", year: "numeric" });
+      if (!grouped[month]) grouped[month] = [];
+      grouped[month].push(item);
+    });
+    return Object.keys(grouped).map((month) => ({ title: month, data: grouped[month] }));
+  }, []);
+
+  const sections = useMemo(() => groupByMonth(filteredBirds), [filteredBirds, groupByMonth]);
+
+  const uniqueSpeciesList = useMemo(
+    () =>
+      Array.from(new Set(birds.map((b) => b.bird)))
+        .map((species) => ({ label: species, value: species }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [birds]
+  );
+
   const handleFilterChange = (
     filterType: string,
     filterValue: string | { start?: Date; end?: Date } | null
   ) => {
     if (filterType === "species") {
       setSelectedSpecies(filterValue as string);
+      setSearch(""); // Reset search when species filter is applied
     } else if (filterType === "date") {
       if (typeof filterValue === "object" && filterValue !== null) {
         setStartDate(filterValue.start || null);
@@ -239,108 +197,64 @@ const HistoryScreen: React.FC = () => {
         setStartDate(null);
         setEndDate(null);
       }
+      setSearch(""); // Reset search when date filter is applied
     }
   };
 
-  // Group birds by month
-  const groupByMonth = (data: BirdHistory[]): BirdSection[] => {
-    const grouped: { [key: string]: BirdHistory[] } = {};
-    data.forEach((item) => {
-      const month = item.timestamp.toLocaleString("default", { month: "long", year: "numeric" });
-      if (!grouped[month]) grouped[month] = [];
-      grouped[month].push(item);
-    });
-    return Object.keys(grouped).map((month) => ({ title: month, data: grouped[month] }));
-  };
-
-  const sections = groupByMonth(birds);
-
-  // Generate the list of unique species for the filter dropdown
-  const uniqueSpeciesList = Array.from(new Set(birds.map((b) => b.bird)))
-    .map((species) => ({ label: species, value: species }))
-    .sort((a, b) => a.label.localeCompare(b.label));
-
-  // Load more birds
   const loadMoreBirds = () => {
     if (!loadingMore && hasMore) {
       fetchBirds();
     }
   };
 
-  // Render each bird item
-  const renderItem = ({ item }: { item: BirdSection }) => (
-    <View style={styles.monthContainer}>
-      <Text style={styles.monthHeader}>{item.title}</Text>
-      {item.data.map((bird) => {
-        const data = birdDataMap[bird.bird] || { imageUrl: "", audubonUrl: "" };
-        const imageUrl = data.imageUrl;
-        const audubonUrl = data.audubonUrl;
-
-        const data = birdDataMap[bird.bird] || { imageUrl: "", audubonUrl: "" };
-        const imageUrl = data.imageUrl;
-        const audubonUrl = data.audubonUrl;
-
-        return (
-          <View style={styles.historyCard} key={bird.id}>
-            <Image
-              source={imageUrl ? { uri: imageUrl } : require("../assets/img/no-image.png")}
-              style={styles.birdImage}
-            />
-            <Image
-              source={imageUrl ? { uri: imageUrl } : require("../assets/img/no-image.png")}
-              style={styles.birdImage}
-            />
-            <View style={styles.entryDetails}>
-              <TouchableOpacity
-                onPress={() => {
-                  if (audubonUrl) {
-                    Linking.openURL(audubonUrl);
-                  } else {
-                    Alert.alert("No Audubon page found for this bird.");
-                  }
-                }}
-              >
-                <Text style={[styles.birdName, { textDecorationLine: "underline" }]}>
-                  {bird.bird}
-                </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  if (audubonUrl) {
-                    Linking.openURL(audubonUrl);
-                  } else {
-                    Alert.alert("No Audubon page found for this bird.");
-                  }
-                }}
-              >
-                <Text style={[styles.birdName, { textDecorationLine: "underline" }]}>
-                  {bird.bird}
-                </Text>
-              </TouchableOpacity>
-              <Text style={styles.birdLocation}>
-                Lat: {bird.latitude}, Lon: {bird.longitude}
+  const renderBirdItem = useCallback(
+    ({ item }: { item: BirdHistory }) => {
+      const data = birdDataMap[item.bird] || { imageUrl: "", audubonUrl: "" };
+      const imageUrl = data.imageUrl;
+      const audubonUrl = data.audubonUrl;
+      return (
+        <View style={styles.historyCard} key={item.id}>
+          <Image
+            source={
+              imageUrl
+                ? { uri: imageUrl }
+                : require("../assets/img/logos/robinAppIcon.png")
+            }
+            style={styles.birdImage}
+          />
+          <View style={styles.entryDetails}>
+            <TouchableOpacity
+              onPress={() => {
+                if (audubonUrl) {
+                  Linking.openURL(audubonUrl);
+                } else {
+                  Alert.alert("No Audubon page found for this bird.");
+                }
+              }}
+            >
+              <Text style={[styles.birdName, { textDecorationLine: "underline" }]}>
+                {item.bird}
               </Text>
-              <Text style={styles.birdLocation}>
-                Lat: {bird.latitude}, Lon: {bird.longitude}
-              </Text>
-            </View>
-            <View style={styles.entryTime}>
-              <Text style={styles.entryDate}>
-                {bird.timestamp.toLocaleDateString()}
-              </Text>
-              <Text style={styles.entryHour}>
-                {bird.timestamp.toLocaleTimeString()}
-              </Text>
-              <Text style={styles.entryDate}>
-                {bird.timestamp.toLocaleDateString()}
-              </Text>
-              <Text style={styles.entryHour}>
-                {bird.timestamp.toLocaleTimeString()}
-              </Text>
-            </View>
+            </TouchableOpacity>
+            <Text style={styles.birdLocation}>
+              Lat: {item.latitude}, Lon: {item.longitude}
+            </Text>
           </View>
-        );
-      })}
-    </View>
+          <View style={styles.entryTime}>
+            <Text style={styles.entryDate}>{item.timestamp.toLocaleDateString()}</Text>
+            <Text style={styles.entryHour}>{item.timestamp.toLocaleTimeString()}</Text>
+          </View>
+        </View>
+      );
+    },
+    [birdDataMap]
+  );
+
+  const renderSectionHeader = useCallback(
+    ({ section: { title } }: { section: { title: string } }) => (
+      <Text style={styles.monthHeader}>{title}</Text>
+    ),
+    []
   );
 
   return (
@@ -349,17 +263,18 @@ const HistoryScreen: React.FC = () => {
         <SearchBar label="Search..." search={search} setSearch={setSearch} onSearch={handleSearch} />
       </View>
 
-      {/* Filter Dropdown */}
+      {/* Filter Component */}
       <Filter speciesList={uniqueSpeciesList} onFilterChange={handleFilterChange} />
 
       {/* Bird List */}
       {loading ? (
         <ActivityIndicator size="large" color={colors.primary} />
       ) : (
-        <FlatList
-          data={sections}
-          keyExtractor={(item) => item.title}
-          renderItem={renderItem}
+        <SectionList
+          sections={sections}
+          keyExtractor={(item) => item.id}
+          renderItem={renderBirdItem}
+          renderSectionHeader={renderSectionHeader}
           onEndReached={loadMoreBirds}
           onEndReachedThreshold={0.5}
           ListFooterComponent={
@@ -372,11 +287,6 @@ const HistoryScreen: React.FC = () => {
           initialNumToRender={20}
           maxToRenderPerBatch={10}
           windowSize={5}
-          getItemLayout={(data, index) => ({
-            length: 100,
-            offset: 100 * index,
-            index,
-          })}
         />
       )}
     </SafeAreaView>
@@ -421,10 +331,6 @@ const styles = StyleSheet.create({
   entryDate: { fontSize: 14, color: colors.secondary, fontWeight: "bold", marginBottom: 2 },
   entryHour: { fontSize: 14, color: colors.text },
   endOfHistory: { fontSize: 16, color: colors.accent, textAlign: "center", marginVertical: 20 },
-  monthContainer: {
-    marginBottom: 24,
-    marginHorizontal: 10,
-  },
 });
 
 export default HistoryScreen;
