@@ -72,7 +72,7 @@ const ForecastScreen: React.FC = () => {
 
   const fetchUserPrefs = async () => {
     try {
-      const resp = await fetch(`http://10.0.0.4:5000/users/${userId}`);
+      const resp = await fetch(`http://192.168.1.3:5000/users/${userId}`);
       if (!resp.ok) {
         console.error("Failed to fetch user doc in ForecastScreen");
         return;
@@ -220,6 +220,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     borderRadius: 15,
     paddingVertical: 12,
+    marginBottom: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },

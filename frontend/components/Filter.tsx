@@ -106,7 +106,7 @@ const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
               <MaterialCommunityIcons
                 name="tune"
                 size={24}
-                color={colors.secondary}
+                color={colors.primary}
                 style={styles.titleIcon}
               />
               <Text style={styles.modalTitle}>Filter Options</Text>
@@ -120,16 +120,25 @@ const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
           </View>
 
           {/* Species Filter */}
+          <View style={styles.labelContainer}>
+            <MaterialCommunityIcons
+              name="bird"
+              size={20}
+              color={colors.secondary}
+              style={styles.labelIcon}
+            />
+            <Text style={styles.label}>Select Species</Text>
+          </View>
           <DropdownComponent
             data={speciesList}
             value={selectedSpecies}
             onChange={handleSpeciesChange}
-            placeholder="Filter by Species"
+            placeholder="Select a Species"
             style={styles.dropdown}
           />
 
           {/* Date Range Filter */}
-          <View style={styles.dateFilterContainer}>
+          <View>
             <View style={styles.labelContainer}>
               <MaterialCommunityIcons
                 name="calendar-range"
@@ -179,6 +188,7 @@ const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
                   style={styles.buttonIcon}
                 />
               }
+              style={{ width: '49%' }}
             />
             <Button
               title="Apply"
@@ -193,6 +203,7 @@ const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
                   style={styles.buttonIcon}
                 />
               }
+              style={{ width: '49%' }}
             />
           </View>
         </View>
@@ -205,22 +216,16 @@ export default Filter;
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: "center",
-    marginRight: 20,
+    alignItems: "center"
   },
   filterButton: {
     backgroundColor: colors.accent,
-    paddingHorizontal: 15,
+    paddingHorizontal: 10,
     paddingVertical: 10,
     borderRadius: 50,
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "flex-end",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
   filterButtonText: {
     color: colors.white,
@@ -229,7 +234,7 @@ const styles = StyleSheet.create({
     fontFamily: "Radio Canada",
   },
   filterIcon: {
-    marginRight: 8,
+    marginRight: 4,
   },
   modal: {
     justifyContent: "center",
@@ -250,7 +255,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom:16,
   },
   titleContainer: {
     flexDirection: "row",
@@ -263,7 +268,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     fontFamily: "Radio Canada",
-    color: colors.secondary,
+    color: colors.primary,
   },
   closeButton: {
     backgroundColor: colors.accent,
@@ -284,9 +289,6 @@ const styles = StyleSheet.create({
   dropdownIcon: {
     marginRight: 8,
   },
-  dateFilterContainer: {
-    marginBottom: 20,
-  },
   labelContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -298,6 +300,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: "bold",
+    fontFamily: 'Radio Canada',
     color: colors.secondary,
   },
   calendar: {

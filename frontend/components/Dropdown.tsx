@@ -103,8 +103,7 @@ const styles = StyleSheet.create({
     marginRight: 8, 
   },
   dropdown: {
-    flex: 1, 
-    margin: 12,
+    flex: 1,
     height: 50,
     backgroundColor: colors.card,
     borderRadius: 30,

@@ -9,7 +9,6 @@ import axios from "axios";
 import debounce from "lodash.debounce";
 import Fuse from "fuse.js";
 
-// Firestore bird interface
 interface BirdHistory {
   id: string;
   bird: string;
@@ -188,7 +187,7 @@ const HistoryScreen: React.FC = () => {
   ) => {
     if (filterType === "species") {
       setSelectedSpecies(filterValue as string);
-      setSearch(""); // Reset search when species filter is applied
+      setSearch("");
     } else if (filterType === "date") {
       if (typeof filterValue === "object" && filterValue !== null) {
         setStartDate(filterValue.start || null);
@@ -197,7 +196,7 @@ const HistoryScreen: React.FC = () => {
         setStartDate(null);
         setEndDate(null);
       }
-      setSearch(""); // Reset search when date filter is applied
+      setSearch("");
     }
   };
 
@@ -260,11 +259,11 @@ const HistoryScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.searchContainer}>
-        <SearchBar label="Search..." search={search} setSearch={setSearch} onSearch={handleSearch} />
+        <View style={{ width: '75%' }}>
+          <SearchBar label="Search..." search={search} setSearch={setSearch} onSearch={handleSearch} />
+        </View>
+        <Filter speciesList={uniqueSpeciesList} onFilterChange={handleFilterChange} />
       </View>
-
-      {/* Filter Component */}
-      <Filter speciesList={uniqueSpeciesList} onFilterChange={handleFilterChange} />
 
       {/* Bird List */}
       {loading ? (
@@ -294,24 +293,33 @@ const HistoryScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  searchContainer: { marginVertical: 8, marginHorizontal: 20 },
+  container: { 
+    flex: 1, 
+    backgroundColor: colors.background 
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 8, 
+    marginHorizontal: 12,
+  },
   monthHeader: {
     fontSize: 24,
+    fontFamily: 'Radio Canada',
     color: colors.secondary,
     fontWeight: "bold",
     backgroundColor: colors.background,
     paddingVertical: 5,
-    paddingHorizontal: 10,
+    paddingHorizontal: 16,
   },
   historyCard: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: colors.card,
     borderRadius: 15,
-    padding: 10,
-    marginVertical: 5,
-    marginHorizontal: 10,
+    padding: 6,
+    marginVertical: 8,
+    marginHorizontal: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -319,18 +327,51 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   birdImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width:65,
+    height: 65,
+    borderColor: colors.primary,
+    borderWidth: 2,
+    borderRadius: 50,
     marginRight: 10,
   },
-  entryDetails: { flex: 1 },
-  birdName: { fontSize: 18, color: colors.primary, marginBottom: 2 },
-  birdLocation: { fontSize: 16, color: colors.text },
-  entryTime: { alignItems: "flex-end" },
-  entryDate: { fontSize: 14, color: colors.secondary, fontWeight: "bold", marginBottom: 2 },
-  entryHour: { fontSize: 14, color: colors.text },
-  endOfHistory: { fontSize: 16, color: colors.accent, textAlign: "center", marginVertical: 20 },
+  entryDetails: { 
+    flex: 1, 
+  },
+  birdName: { 
+    fontSize: 18, 
+    fontFamily: 'Caprasimo',
+    color: colors.primary, 
+    marginBottom: 2 
+  },
+  birdLocation: { 
+    fontSize: 14,
+    fontFamily: 'Radio Canada',
+    color: colors.text 
+  },
+  entryTime: {
+    marginLeft: 6,
+    fontFamily: 'Radio Canada',
+    alignItems: "flex-end" 
+  },
+  entryDate: { 
+    fontSize: 14,
+    fontFamily: 'Radio Canada',
+    color: colors.secondary, 
+    fontWeight: "bold", 
+    marginBottom: 2 
+  },
+  entryHour: { 
+    fontSize: 14,
+    fontFamily: 'Radio Canada',
+    color: colors.text 
+  },
+  endOfHistory: { 
+    fontSize: 16,
+    fontFamily: 'Radio Canada',
+    color: colors.accent, 
+    textAlign: "center", 
+    marginVertical: 20 
+  },
 });
 
 export default HistoryScreen;
