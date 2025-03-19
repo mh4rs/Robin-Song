@@ -20,7 +20,7 @@ import json
 from bs4 import BeautifulSoup
 import requests
 import openai
-
+import math
 
 app = Flask(__name__)
 CORS(app)

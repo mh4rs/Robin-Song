@@ -193,6 +193,7 @@ const ForecastScreen: React.FC = () => {
                   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${hotspot.lat},${hotspot.lon}`;
                   Linking.openURL(mapsUrl);
                 }}
+              />
             </View>
           </>
         ) : (

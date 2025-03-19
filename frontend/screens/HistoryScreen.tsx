@@ -166,7 +166,7 @@ const HistoryScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.topBar}>
           <SearchBar 
-            label="Search..."
+            label="Search for a bird species"
             search={search}
             setSearch={(value) => {
               setSearch(value);
