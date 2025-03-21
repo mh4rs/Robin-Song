@@ -8,6 +8,7 @@ import colors from "../assets/theme/colors";
 import axios from "axios";
 import debounce from "lodash.debounce";
 import Fuse from "fuse.js";
+import { API_BASE_URL } from "../../database/firebaseConfig";
 
 interface BirdHistory {
   id: string;
@@ -110,7 +111,7 @@ const HistoryScreen: React.FC = () => {
   const fetchDataForBird = async (birdName: string) => {
     try {
       const infoRes = await axios.get<{ url: string }>(
-        "http://192.168.1.108:5000/bird-info",
+        `${API_BASE_URL}/bird-info`,
         { params: { bird: birdName } }
       );
       const audubonUrl = infoRes.data.url || "";
@@ -122,7 +123,7 @@ const HistoryScreen: React.FC = () => {
         return;
       }
       const scrapeRes = await axios.get<{ image_url?: string }>(
-        "http://192.168.1.108:5000/scrape-bird-info",
+        `${API_BASE_URL}/scrape-bird-info`,
         { params: { url: audubonUrl } }
       );
       const imageUrl = scrapeRes.data.image_url || "";

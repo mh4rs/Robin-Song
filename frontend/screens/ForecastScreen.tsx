@@ -15,6 +15,7 @@ import * as Location from 'expo-location';
 import DropdownComponent from '../components/Dropdown';
 import colors from '../assets/theme/colors';
 import { Platform } from 'react-native';
+import { API_BASE_URL } from "../../database/firebaseConfig";
 
 interface HotspotResponse {
   location: string;
@@ -24,9 +25,9 @@ interface HotspotResponse {
 }
 
 const ForecastScreen: React.FC = () => {
-  // Hardcoded for now
+  // Hardcoded user-id (needs to change with user sessions)
   const userId = "FsDwDpHUD6XQU3egNNCOJLCTiNg1";
-  const API_URL = "http://10.0.0.140:5000/get-hotspot";
+  const API_URL = `${API_BASE_URL}/get-hotspot`;
 
   const [selectedValue, setSelectedValue] = useState<string>('American Robin');
   const [hotspot, setHotspot] = useState<HotspotResponse | null>(null);
@@ -71,7 +72,7 @@ const ForecastScreen: React.FC = () => {
 
   const fetchUserPrefs = async () => {
     try {
-      const resp = await fetch(`http://192.168.1.3:5000/users/${userId}`);
+      const resp = await fetch(`${API_BASE_URL}/users/${userId}`);
       if (!resp.ok) {
         console.error("Failed to fetch user doc in ForecastScreen");
         return;

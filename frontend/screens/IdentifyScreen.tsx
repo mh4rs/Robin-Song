@@ -8,6 +8,7 @@ import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from "expo-av";
 import * as Location from "expo-location";
 import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { db } from "../../database/firebaseConfig";
+import { API_BASE_URL } from "../../database/firebaseConfig";
 
 interface BirdData {
  bird: string;
@@ -108,13 +109,13 @@ const IdentifyScreen: React.FC = () => {
    setLoading(true);
    try {
      const urlResponse = await axios.get<{ name: string; url: string }>(
-       "http://192.168.1.3:5000/bird-info",
+       `${API_BASE_URL}/bird-info`,
        { params: { bird: birdName } }
      );
      const birdUrl = urlResponse.data.url;
 
      const scrapeResponse = await axios.get<BirdInfo>(
-       "http://192.168.1.3:5000/scrape-bird-info",
+       `${API_BASE_URL}/scrape-bird-info`,
        { params: { url: birdUrl } }
      );
      setBirdInfo(scrapeResponse.data);
@@ -166,7 +167,7 @@ const IdentifyScreen: React.FC = () => {
        formData.append("latitude", String(latitude ?? 0));
        formData.append("longitude", String(longitude ?? 0));
        const response = await axios.post<UploadResponse>(
-         "http://192.168.1.3:5000/upload",
+         `${API_BASE_URL}/upload`,
          formData,
          { headers: { "Content-Type": "multipart/form-data" } }
        );

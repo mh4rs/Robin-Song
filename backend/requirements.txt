@@ -1,6 +1,7 @@
 absl-py==2.1.0
 astunparse==1.6.3
 audioread==3.0.1
+beautifulsoup4==4.12.3
 birdnetlib==0.16.0
 CacheControl==0.14.1
 cachetools==5.5.0

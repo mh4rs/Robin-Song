@@ -6,6 +6,7 @@ import Accordion from '../components/Accordion';
 import TextFormField from '../components/TextForm';
 import Button from '../components/Button';
 import Toggle from '../components/Toggle';
+import { API_BASE_URL } from "../../database/firebaseConfig";
 
 const SettingsScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -16,13 +17,13 @@ const SettingsScreen: React.FC = () => {
   const [error, setError] = useState('');
   const [locationEnabled, setLocationEnabled] = useState<boolean>(false);
   const [voiceCommandsEnabled, setVoiceCommandsEnabled] = useState<boolean>(false);
-  const userId = "CQsoyFEnAxWfG20BWvULv9hJSZa2"; // hardcoded for now
+  const userId = "FsDwDpHUD6XQU3egNNCOJLCTiNg1"; // Hardcoded user-id (needs to change with user sessions)
 
   useFocusEffect(
     React.useCallback(() => {
       const fetchUserPrefs = async () => {
         try {
-          const response = await fetch(`http://.168.1.108:5000/users/${userId}`);
+          const response = await fetch(`${API_BASE_URL}/users/${userId}`);
           if (!response.ok) {
             console.error("Failed to fetch user doc from server");
             return;
@@ -133,7 +134,7 @@ const SettingsScreen: React.FC = () => {
           onToggle={async (newValue) => {
             setLocationEnabled(newValue);
             try {
-              const patchResp = await fetch(`http://192.168.1.108:5000/users/${userId}/preferences`, {
+              const patchResp = await fetch(`${API_BASE_URL}/users/${userId}preferences`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ locationPreferences: newValue }),
