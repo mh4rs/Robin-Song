@@ -102,7 +102,11 @@ const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
       >
         <View style={styles.modalContent}>
           <View style={styles.modalTopBar}>
-            <View style={styles.titleContainer}>
+            <View
+              accessible={true}
+              accessibilityRole="header"
+              style={styles.titleContainer}
+            >
               <MaterialCommunityIcons
                 name="tune"
                 size={24}
@@ -112,6 +116,8 @@ const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
               <Text style={styles.modalTitle}>Filter Options</Text>
             </View>
             <TouchableOpacity
+              accessibilityLabel="Close button"
+              accessibilityHint="Double tap to close the filter screen."
               style={styles.closeButton}
               onPress={() => setIsModalVisible(false)}
             >
@@ -120,7 +126,12 @@ const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
           </View>
 
           {/* Species Filter */}
-          <View style={styles.labelContainer}>
+          <View
+            accessible={true}
+            accessibilityRole="header"
+            accessibilityHint="Continue forward to select a species from a dropdown to filter your bird history list."
+            style={styles.labelContainer}
+          >
             <MaterialCommunityIcons
               name="bird"
               size={20}
@@ -139,7 +150,12 @@ const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
 
           {/* Date Range Filter */}
           <View>
-            <View style={styles.labelContainer}>
+            <View
+              accessible={true}
+              accessibilityRole="header"
+              accessibilityHint="Continue forward to select dates on a calendar to filter your bird history list."
+              style={styles.labelContainer}
+            >
               <MaterialCommunityIcons
                 name="calendar-range"
                 size={20}
