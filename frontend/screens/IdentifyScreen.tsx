@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import {SafeAreaView, View, Text, StyleSheet, Image, ScrollView, ActivityIndicator, TouchableOpacity, Alert} from "react-native";
+import {SafeAreaView, View, Text, StyleSheet, Image, ScrollView, ActivityIndicator, TouchableOpacity, Alert, AccessibilityInfo, findNodeHandle} from "react-native";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import axios from "axios";
 import colors from "frontend/assets/theme/colors";
@@ -47,6 +47,7 @@ const IdentifyScreen: React.FC = () => {
  const [latitude, setLatitude] = useState<number | null>(null);
  const [longitude, setLongitude] = useState<number | null>(null);
  const recordingRef = useRef<Audio.Recording | null>(null);
+ const birdNameRef = useRef(null);
 
  useEffect(() => {
    const fetchLastBird = async () => {
@@ -93,17 +94,27 @@ const IdentifyScreen: React.FC = () => {
    fetchInitialLocation();
  }, []);
 
+ useEffect(() => {
+  if (latestBird && birdNameRef.current) {
+    const birdNode = findNodeHandle(birdNameRef.current);
+    if (birdNode) {
+      AccessibilityInfo.announceForAccessibility(`New bird identified: ${latestBird.bird}`);
+      AccessibilityInfo.setAccessibilityFocus(birdNode);
+    }
+  }
+}, [latestBird]);
+
  const fetchBirdInfo = async (birdName: string) => {
    setLoading(true);
    try {
      const urlResponse = await axios.get<{ name: string; url: string }>(
-       "http://10.0.0.140:5000/bird-info",
+       "http://192.168.1.3:5000/bird-info",
        { params: { bird: birdName } }
      );
      const birdUrl = urlResponse.data.url;
 
      const scrapeResponse = await axios.get<BirdInfo>(
-       "http://10.0.0.140:5000/scrape-bird-info",
+       "http://192.168.1.3:5000/scrape-bird-info",
        { params: { url: birdUrl } }
      );
      setBirdInfo(scrapeResponse.data);
@@ -155,7 +166,7 @@ const IdentifyScreen: React.FC = () => {
        formData.append("latitude", String(latitude ?? 0));
        formData.append("longitude", String(longitude ?? 0));
        const response = await axios.post<UploadResponse>(
-         "http://10.0.0.140:5000/upload",
+         "http://192.168.1.3:5000/upload",
          formData,
          { headers: { "Content-Type": "multipart/form-data" } }
        );
@@ -242,7 +253,12 @@ const IdentifyScreen: React.FC = () => {
          </Card>
        </View>
 
-       <Text style={styles.speciesName}>
+       <Text
+        ref={birdNameRef}
+        accessible={true}
+        accessibilityLabel={`Bird identified: ${latestBird ? latestBird.bird : "No bird found yet."}`}
+        style={styles.speciesName}
+       >
          {latestBird ? latestBird.bird : "No Bird Found Yet"}
        </Text>
        <Text style={styles.speciesLatin}>
