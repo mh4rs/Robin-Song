@@ -81,6 +81,9 @@ const Filter: React.FC<FilterProps> = ({ speciesList, onFilterChange }) => {
     <View style={styles.container}>
       {/* Filter button to open modal */}
       <TouchableOpacity
+        accessible={true}
+        accessibilityHint="Double tap to open the filter screen."
+        accessibilityRole="button"
         style={styles.filterButton}
         onPress={() => setIsModalVisible(true)}
       >

@@ -212,7 +212,13 @@ const HistoryScreen: React.FC = () => {
       const imageUrl = data.imageUrl;
       const audubonUrl = data.audubonUrl;
       return (
-        <View style={styles.historyCard} key={item.id}>
+        <View 
+          accessible={true} 
+          accessibilityLabel={`${item.bird}. Identified on ${item.timestamp.toLocaleDateString()} at ${item.timestamp.toLocaleTimeString()}`}
+          accessibilityHint={`Double tap to open the Audobon.com website for ${item.bird}. This will leave the app and open an external browser.`}
+          style={styles.historyCard} 
+          key={item.id}
+        >
           <Image
             source={
               imageUrl
@@ -251,7 +257,13 @@ const HistoryScreen: React.FC = () => {
 
   const renderSectionHeader = useCallback(
     ({ section: { title } }: { section: { title: string } }) => (
-      <Text style={styles.monthHeader}>{title}</Text>
+      <Text
+        accessibilityRole="header"
+        accessibilityHint={`Continue forward to view birds you've identified in ${title}`}
+        style={styles.monthHeader}
+      >
+        {title}
+      </Text>
     ),
     []
   );
@@ -260,7 +272,7 @@ const HistoryScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.searchContainer}>
         <View style={{ width: '75%' }}>
-          <SearchBar label="Search..." search={search} setSearch={setSearch} onSearch={handleSearch} />
+          <SearchBar label="Search for a bird species" search={search} setSearch={setSearch} onSearch={handleSearch} />
         </View>
         <Filter speciesList={uniqueSpeciesList} onFilterChange={handleFilterChange} />
       </View>
