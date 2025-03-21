@@ -1,7 +1,8 @@
-import React from 'react';
-import { StyleSheet, View, Text } from 'react-native';
-import { Dropdown } from 'react-native-element-dropdown';
-import colors from '../assets/theme/colors';
+import React, { useState } from "react";
+import { StyleSheet, View, Text, TextInput, Animated } from "react-native";
+import { Dropdown } from "react-native-element-dropdown";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import colors from "../assets/theme/colors";
 
 interface DropdownProps {
   data: { label: string; value: string | number }[];
@@ -11,79 +12,137 @@ interface DropdownProps {
   maxHeight?: number;
   style?: object;
   disableScroll?: boolean;
+  icon?: React.ReactNode; 
+  searchable?: boolean;
 }
 
 const DropdownComponent: React.FC<DropdownProps> = ({
   data,
   value,
   onChange,
-  placeholder = 'Select a species',
+  placeholder = "Select a species",
   maxHeight = 300,
   style,
   disableScroll = false,
+  icon,
+  searchable = false, 
 }) => {
+  const [searchText, setSearchText] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
+  const fadeAnim = useState(new Animated.Value(0))[0]; 
+  const filteredData = searchable
+    ? data.filter((item) =>
+        item.label.toLowerCase().includes(searchText.toLowerCase())
+      )
+    : data;
+
   const renderItem = (item: { label: string; value: string | number }) => (
     <View style={styles.item}>
       <Text style={styles.textItem}>{item.label}</Text>
     </View>
   );
 
+  const handleFocus = () => {
+    setIsFocused(true);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  };
+
   return (
-    <Dropdown
-      accessibilityLabel='Bird species selection dropdown'
-      style={[styles.dropdown, style]}
-      containerStyle={styles.container}
-      placeholderStyle={styles.placeholderStyle}
-      selectedTextStyle={styles.selectedTextStyle}
-      iconStyle={styles.iconStyle}
-      iconColor={colors.text}
-      activeColor={colors.chatGPTCardBackground}
-      data={data}
-      maxHeight={maxHeight}
-      labelField="label"
-      valueField="value"
-      placeholder={placeholder}
-      value={value}
-      onChange={onChange}
-      renderItem={renderItem}
-    />
+    <View style={styles.wrapper}>
+      {icon && <View style={styles.iconContainer}>{icon}</View>}
+      <Dropdown
+        accessibilityLabel='Bird species selection dropdown'
+        style={[
+          styles.dropdown,
+          style,
+          isFocused && { borderColor: colors.primary },
+        ]}
+        containerStyle={styles.container}
+        placeholderStyle={styles.placeholderStyle}
+        selectedTextStyle={styles.selectedTextStyle}
+        iconStyle={styles.iconStyle}
+        iconColor={colors.text}
+        activeColor={colors.chatGPTCardBackground}
+        data={filteredData}
+        maxHeight={maxHeight}
+        labelField="label"
+        valueField="value"
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        renderItem={renderItem}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        search={searchable} 
+        searchPlaceholder="Search..."
+        onChangeText={searchable ? setSearchText : undefined}
+        inputSearchStyle={styles.searchInput} 
+      />
+    </View>
   );
 };
 
 export default DropdownComponent;
 
 const styles = StyleSheet.create({
+  wrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  iconContainer: {
+    marginRight: 8, 
+  },
   dropdown: {
-    margin: 12,
-    width: '100%',
-    height: 35,
+    flex: 1,
+    height: 50,
     backgroundColor: colors.card,
     borderRadius: 30,
     borderColor: `${colors.primary}80`,
     borderWidth: 2,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-    elevation: 2,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   container: {
-    borderRadius: 5,
+    borderRadius: 10,
     backgroundColor: colors.bottomnav,
+    marginTop: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   item: {
-    padding: 17,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    padding: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     borderBottomWidth: 1,
     borderBottomColor: colors.accent,
   },
   textItem: {
     flex: 1,
     fontSize: 16,
-    fontFamily: 'Radio Canada',
+    fontFamily: "Radio Canada",
+    color: colors.text,
   },
   iconStyle: {
     width: 24,
@@ -91,13 +150,23 @@ const styles = StyleSheet.create({
   },
   placeholderStyle: {
     fontSize: 16,
-    fontFamily: 'Radio Canada',
+    fontFamily: "Radio Canada",
+    color: colors.text,
   },
   selectedTextStyle: {
-    fontSize: 18,
-    fontFamily: 'Radio Canada',
-    fontWeight: 500,
+    fontSize: 16,
+    fontFamily: "Radio Canada",
+    fontWeight: "500",
     color: colors.text,
-    textAlign: 'center',
+  },
+  searchInput: {
+    height: 40,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    margin: 8,
+    backgroundColor: colors.white,
+    color: colors.text,
   },
 });
