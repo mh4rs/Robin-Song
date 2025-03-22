@@ -17,6 +17,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import colors from '../assets/theme/colors';
 import { Platform } from 'react-native';
 import { API_BASE_URL } from "../../database/firebaseConfig";
+import { useUserData } from '../UserContext';
 
 interface HotspotResponse {
   location: string;
@@ -34,6 +35,8 @@ const ForecastScreen: React.FC = () => {
   const [userWantsLocation, setUserWantsLocation] = useState<boolean>(false);
   const [hasPermission, setHasPermission] = useState<boolean>(false);
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const { userData } = useUserData(); 
+  const firstName = userData?.firstName || "Guest";
 
   const birdMapping: Record<string, string> = {
     "American Robin": "robin",
@@ -168,7 +171,7 @@ const ForecastScreen: React.FC = () => {
           />
         </View>
 
-        <Text style={styles.greeting}>Good Morning, Jodi!</Text>
+        <Text style={styles.greeting}>Good Morning, {firstName}!</Text>
         <Text style={styles.description}>
           You are most likely to see <Text style={styles.highlight}>{selectedValue}</Text> at this location today:
         </Text>

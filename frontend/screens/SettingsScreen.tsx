@@ -8,6 +8,7 @@ import TextFormField from '../components/TextForm';
 import Button from '../components/Button';
 import Toggle from '../components/Toggle';
 import { API_BASE_URL } from "../../database/firebaseConfig";
+import { useUserData } from '../UserContext'; 
 
 const SettingsScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -19,7 +20,8 @@ const SettingsScreen: React.FC = () => {
   const [locationEnabled, setLocationEnabled] = useState<boolean>(false);
   const [voiceCommandsEnabled, setVoiceCommandsEnabled] = useState<boolean>(false);
   const [userId, setUserId] = useState<string | null>(null);
-
+  const { userData } = useUserData();
+  
   useFocusEffect(
     React.useCallback(() => {
       const fetchUserData = async () => {
@@ -78,9 +80,11 @@ const SettingsScreen: React.FC = () => {
           </View>
           <View>
             <View style={styles.topRow}>
-              <Text style={styles.name}>Jodi Joven</Text>
+              <Text style={styles.name}>
+                {userData?.firstName ?? ''} {userData?.lastName ?? ''}
+              </Text>
             </View>
-            <Text style={styles.infoText}>jodijov@umich.edu</Text>
+            <Text style={styles.infoText}>{userData?.email ?? ''}</Text>
             <Text style={styles.infoText}>Dearborn, Michigan</Text>
           </View>
         </View>

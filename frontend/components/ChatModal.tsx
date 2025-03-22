@@ -26,6 +26,8 @@ import { db, API_BASE_URL } from '../../database/firebaseConfig';
 import { collection, query, orderBy, where, onSnapshot, Timestamp } from 'firebase/firestore';
 import { Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useUserData } from '../UserContext';
+
 
 
 interface ChatModalProps {
@@ -299,6 +301,9 @@ const handleSendMessage = async () => {
           </View>
       );
   };
+
+  const { userData } = useUserData();
+  const firstName = userData?.firstName || "Guest";
   
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -378,7 +383,7 @@ const handleSendMessage = async () => {
                           source={require('frontend/assets/img/chatbotlogo.png')}
                           style={styles.chatbotImage}
                         />
-                        <Text style={styles.heading}>Hi Jodi, I'm Robin!</Text>
+                        <Text style={styles.heading}>Hi {firstName}, I'm Robin!</Text>
                         <Text style={styles.subHeading}>How can I help you?</Text>
                         <Text style={styles.suggestionsHeading}>Suggestions</Text>
   
