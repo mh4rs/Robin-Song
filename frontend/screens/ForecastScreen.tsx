@@ -26,10 +26,6 @@ interface HotspotResponse {
 }
 
 const ForecastScreen: React.FC = () => {
-  // Hardcoded user-id (needs to change with user sessions)
-  const userId = "FsDwDpHUD6XQU3egNNCOJLCTiNg1";
-  const API_URL = `${API_BASE_URL}/get-hotspot`;
-
   const [selectedValue, setSelectedValue] = useState<string>('American Robin');
   const [hotspot, setHotspot] = useState<HotspotResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -73,11 +69,15 @@ const ForecastScreen: React.FC = () => {
 
   const fetchUserPrefs = async () => {
     try {
-      const resp = await fetch(`${API_BASE_URL}/users/${userId}`);
+      const resp = await fetch(`${API_BASE_URL}/users/me`, {
+        credentials: 'include',
+      });
+
       if (!resp.ok) {
         console.error("Failed to fetch user doc in ForecastScreen");
         return;
       }
+
       const userData = await resp.json();
       const pref = Boolean(userData.locationPreferences);
       setUserWantsLocation(pref);
@@ -117,7 +117,10 @@ const ForecastScreen: React.FC = () => {
         params.lon = userCoords.longitude;
       }
 
-      const response = await axios.get<HotspotResponse>(API_URL, { params });
+      const response = await axios.get<HotspotResponse>(`${API_BASE_URL}/get-hotspot`, {
+        params,
+        withCredentials: true, 
+      });
       setHotspot(response.data);
     } catch (error) {
       console.error("API Error:", error);
@@ -179,8 +182,8 @@ const ForecastScreen: React.FC = () => {
               provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
               style={styles.map}
               initialRegion={{
-                latitude: userCoords?.latitude ?? hotspot?.lat ?? 43.0125,
-                longitude: userCoords?.longitude ?? hotspot?.lon ?? -83.6875,
+                latitude: userCoords?.latitude ?? hotspot.lat ?? 43.0125,
+                longitude: userCoords?.longitude ?? hotspot.lon ?? -83.6875,
                 latitudeDelta: 0.05,
                 longitudeDelta: 0.05,
               }}
@@ -202,6 +205,8 @@ const ForecastScreen: React.FC = () => {
     </SafeAreaView>
   );
 };
+
+export default ForecastScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -268,5 +273,3 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
 });
-
-export default ForecastScreen;

@@ -98,9 +98,10 @@ export default function RegisterScreen() {
   
       console.log("User signed in with Google:", user);
   
-      const response = await fetch("http://localhost:5000/google-register", {
+      const response = await fetch("http://10.0.0.4:5000/google-register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           email: user.email,
           firstName: user.displayName?.split(" ")[0] || "Google",

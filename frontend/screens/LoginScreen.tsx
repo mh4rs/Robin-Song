@@ -102,17 +102,17 @@ export default function LoginScreen() {
   
       console.log("User signed in with Google:", user);
   
-      // Register Google user in Firestore
-      const response = await fetch("http://localhost:5000/google-register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: user.email,
-          firstName: user.displayName?.split(" ")[0] || "Google",
-          lastName: user.displayName?.split(" ")[1] || "User",
-          uid: user.uid,
-        }),
-      });
+    const response = await fetch("http://10.0.0.4:5000/google-register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include", // <-- ADD THIS LINE
+      body: JSON.stringify({
+        email: user.email,
+        firstName: user.displayName?.split(" ")[0] || "Google",
+        lastName: user.displayName?.split(" ")[1] || "User",
+        uid: user.uid,
+      }),
+    });
   
       const data = await response.json();
       if (!response.ok) {
