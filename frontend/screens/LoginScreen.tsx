@@ -19,6 +19,7 @@ import { makeRedirectUri } from "expo-auth-session";
 import { GoogleAuthProvider } from "firebase/auth";
 import { signInWithCredential } from "firebase/auth";
 import { useUserData } from '../UserContext'; 
+import { db, API_BASE_URL } from '../../database/firebaseConfig';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -69,7 +70,7 @@ export default function LoginScreen() {
       const result = await loginUser(email, password); 
       if (result) {
         console.log("Login successful:", result);
-        const userResponse = await fetch("http://10.0.0.4:5000/users/me", {
+        const userResponse = await fetch(`${API_BASE_URL}/users/me`, {
           method: "GET",
           credentials: "include", 
         });
@@ -115,7 +116,7 @@ export default function LoginScreen() {
   
       console.log("User signed in with Google:", user);
   
-    const response = await fetch("http://10.0.0.4:5000/google-register", {
+      const response = await fetch(`${API_BASE_URL}/google-register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

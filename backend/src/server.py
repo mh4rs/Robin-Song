@@ -21,6 +21,7 @@ from bs4 import BeautifulSoup
 import requests
 from openai import OpenAI
 from dotenv import load_dotenv
+load_dotenv()
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 import math
@@ -28,7 +29,6 @@ from functools import wraps
 from flask import session, jsonify
 from flask_session import Session
 from flask import Flask, request
-load_dotenv()
 
 
 app = Flask(__name__)
@@ -51,10 +51,12 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-cred = credentials.Certificate(
-    os.path.join(os.path.dirname(os.path.dirname(__file__)),
-    "secrets/firebase-admin-key.json")
-)
+cred_path = os.getenv("FIREBASE_ADMIN_CREDENTIALS")
+if not cred_path or not os.path.isfile(cred_path):
+    raise FileNotFoundError(f"Firebase credentials file not found at: {cred_path}")
+
+cred = credentials.Certificate(cred_path)
+
 initialize_app(cred)
 db = firestore.client()
 
