@@ -23,8 +23,12 @@ import SearchBar from './SearchBar';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 const auth = getAuth();
 import { db, API_BASE_URL } from '../../database/firebaseConfig';
-import { collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
+import { collection, query, orderBy, where, onSnapshot, Timestamp } from 'firebase/firestore';
 import { Animated } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useUserData } from '../UserContext';
+
+
 
 interface ChatModalProps {
   visible: boolean;
@@ -56,8 +60,8 @@ const ChatModal: React.FC<ChatModalProps> = ({ visible, onClose }) => {
   useEffect(() => {
     const fetchSuggestedQuestions = async () => {
         try {
-            const response = await fetch(`${API_BASE_URL}/bird-questions`);
-            if (response.ok) {
+           const response = await fetch(`${API_BASE_URL}/bird-questions`, { credentials: "include" });
+          if (response.ok) {
                 const data = await response.json();
                 setSuggestedQuestions(data.questions);
             }
@@ -97,7 +101,9 @@ const ChatModal: React.FC<ChatModalProps> = ({ visible, onClose }) => {
   useEffect(() => {
     const fetchChats = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/chats`);
+        const response = await fetch(`${API_BASE_URL}/chats`, {
+          credentials: "include",
+        });
         if (response.ok) {
           const data = await response.json();
           const formattedChats = data.map((chat: any) => ({
@@ -114,7 +120,13 @@ const ChatModal: React.FC<ChatModalProps> = ({ visible, onClose }) => {
     
     fetchChats();
 
-    const q = query(collection(db, 'chats'), orderBy('createdAt', 'desc'));
+
+    if (!userId) return; 
+    const q = query(
+      collection(db, 'chats'),
+      where("userId", "==", userId),
+      orderBy('createdAt', 'desc')
+    );
     const unsubscribe = onSnapshot(q, snapshot => {
       const fetchedChats = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -127,6 +139,9 @@ const ChatModal: React.FC<ChatModalProps> = ({ visible, onClose }) => {
     return () => unsubscribe();
   }, [userId]);
 
+  
+  
+  
   useEffect(() => {
     if (selectedChat) {
         const q = query(collection(db, 'chats', selectedChat, 'messages'), orderBy('timestamp', 'asc'));
@@ -171,12 +186,12 @@ const ChatModal: React.FC<ChatModalProps> = ({ visible, onClose }) => {
         }));
 
         const response = await fetch(`${API_BASE_URL}/chats/${threadID}/message`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                message: message, 
-            }),
+          method: 'POST',
+          credentials: "include",
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: message }),
         });
+        
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -228,10 +243,11 @@ const ChatModal: React.FC<ChatModalProps> = ({ visible, onClose }) => {
         }
 
         const response = await fetch(`${API_BASE_URL}/chats`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: chatTitle }),
-        });
+          method: 'POST',
+          credentials: "include",
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: chatTitle }),
+        });        
 
         if (!response.ok) {
             throw new Error(`Failed to create chat: ${response.status}`);
@@ -285,6 +301,9 @@ const handleSendMessage = async () => {
           </View>
       );
   };
+
+  const { userData } = useUserData();
+  const firstName = userData?.firstName || "Guest";
   
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -364,7 +383,7 @@ const handleSendMessage = async () => {
                           source={require('frontend/assets/img/chatbotlogo.png')}
                           style={styles.chatbotImage}
                         />
-                        <Text style={styles.heading}>Hi Jodi, I'm Robin!</Text>
+                        <Text style={styles.heading}>Hi {firstName}, I'm Robin!</Text>
                         <Text style={styles.subHeading}>How can I help you?</Text>
                         <Text style={styles.suggestionsHeading}>Suggestions</Text>
   
@@ -430,18 +449,22 @@ const ChatListScreen: React.FC<{
 
   const handleDeleteChat = async (chatId: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/chats/${chatId}`, { method: "DELETE" });
+      const response = await fetch(`${API_BASE_URL}/chats/${chatId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
       if (response.ok) {
-        onSetChats((prevChats: { id: string; title: string; date: Date }[]) => prevChats.filter((chat: { id: string; title: string; date: Date }) => chat.id !== chatId));
+        onSetChats(prevChats => prevChats.filter(chat => chat.id !== chatId));
         if (selectedChat === chatId) {
           setSelectedChat(null);
         }
-        Alert.alert("Chat Deleted", "The chat has been successfully deleted.");        
+        Alert.alert("Chat Deleted", "The chat has been successfully deleted.");
       }
     } catch (error) {
       console.error("Error deleting chat:", error);
     }
   };
+  
 
   const groupChatsByDate = (chats: { id: string; title: string; date: Date }[]) => {
     const today = new Date();

@@ -8,6 +8,7 @@ import TextFormField from '../components/TextForm';
 import Button from '../components/Button';
 import Toggle from '../components/Toggle';
 import { API_BASE_URL } from "../../database/firebaseConfig";
+import { useUserData } from '../UserContext'; 
 
 const SettingsScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -18,26 +19,52 @@ const SettingsScreen: React.FC = () => {
   const [error, setError] = useState('');
   const [locationEnabled, setLocationEnabled] = useState<boolean>(false);
   const [voiceCommandsEnabled, setVoiceCommandsEnabled] = useState<boolean>(false);
-  const userId = "FsDwDpHUD6XQU3egNNCOJLCTiNg1"; // Hardcoded user-id (needs to change with user sessions)
-
+  const [userId, setUserId] = useState<string | null>(null);
+  const { userData } = useUserData();
+  
   useFocusEffect(
     React.useCallback(() => {
-      const fetchUserPrefs = async () => {
+      const fetchUserData = async () => {
         try {
-          const response = await fetch(`${API_BASE_URL}/users/${userId}`);
+          const response = await fetch(`${API_BASE_URL}/users/me`, {
+            credentials: 'include', 
+          });
           if (!response.ok) {
-            console.error("Failed to fetch user doc from server");
+            console.error("Failed to fetch user data from server");
             return;
           }
           const userData = await response.json();
+          setUserId(userData.id);
           setLocationEnabled(Boolean(userData.locationPreferences));
+          setFirstName(userData.firstName || '');
+          setLastName(userData.lastName || '');
+          setEmail(userData.email || '');
         } catch (err) {
-          console.error("Error fetching user prefs:", err);
+          console.error("Error fetching user data:", err);
         }
       };
-      fetchUserPrefs();
+      fetchUserData();
     }, [])
   );
+  
+  const handleLogout = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (response.ok) {
+        navigation.navigate("Home");
+      } else {
+        console.error("Failed to log out");
+        Alert.alert("Logout failed", "Please try again.");
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      Alert.alert("Logout error", "An error occurred. Please try again.");
+    }
+  };
+  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -48,15 +75,14 @@ const SettingsScreen: React.FC = () => {
             <View style={styles.topRow}>
               <Image source={require("../assets/img/robin.png")} style={styles.image} />
             </View>
-            <Text style={styles.label}>Email</Text>
-            <Text style={styles.label}>Location</Text>
           </View>
           <View>
             <View style={styles.topRow}>
-              <Text style={styles.name}>Jodi Joven</Text>
+              <Text style={styles.name}>
+                {userData?.firstName ?? ''} {userData?.lastName ?? ''}
+              </Text>
+              <Text style={styles.infoText}>{userData?.email ?? ''}</Text>
             </View>
-            <Text style={styles.infoText}>jodijov@umich.edu</Text>
-            <Text style={styles.infoText}>Dearborn, Michigan</Text>
           </View>
         </View>
 
@@ -128,8 +154,9 @@ const SettingsScreen: React.FC = () => {
           onToggle={async (newValue) => {
             setLocationEnabled(newValue);
             try {
-              const patchResp = await fetch(`${API_BASE_URL}/users/${userId}preferences`, {
+              const patchResp = await fetch(`${API_BASE_URL}/users/${userId}/preferences`, {
                 method: 'PATCH',
+                credentials: "include", 
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ locationPreferences: newValue }),
               });
@@ -143,12 +170,13 @@ const SettingsScreen: React.FC = () => {
           description="Enable your location for personalized bird species predictions for your area. Location access is required in order to receive bird forecast prediction local to your area."
         />
 
+
         <View style={styles.buttonContainer}>
-          <Button
-            title="Logout"
-            onPress={() => navigation.navigate("Home")}
-            variant="secondary"
-          />
+        <Button
+          title="Logout"
+          onPress={handleLogout}
+          variant="secondary"
+        />
           <Button
             title="Delete Account"
             onPress={() => Alert.alert('Delete Account Pressed')}
@@ -211,12 +239,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Radio Canada',
     color: colors.text,
-    marginBottom: 5,
   },
   image: {
     width: 65,
     height: 65,
-    marginBottom: 10,
     borderRadius: 50,
   },
   buttonContainer: {
