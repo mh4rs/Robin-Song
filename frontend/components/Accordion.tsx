@@ -21,9 +21,11 @@ interface AccordionProps {
   title: string;
   children: React.ReactNode;
   startIcon: string;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
-const Accordion: React.FC<AccordionProps> = ({ title, children, startIcon }) => {
+const Accordion: React.FC<AccordionProps> = ({ title, children, startIcon, accessibilityLabel, accessibilityHint }) => {
   const [expanded, setExpanded] = useState(false);
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
@@ -43,13 +45,17 @@ const Accordion: React.FC<AccordionProps> = ({ title, children, startIcon }) => 
     outputRange: ['0deg', '90deg'],
   });
 
+  const currentAccessibilityHint = expanded
+    ? 'Swipe to continue forward and interact with content.'
+    : `Double tap to ${expanded ? 'collapse' : 'expand'} section`
+
   return (
     <View style={styles.container}>
       <TouchableOpacity
         accessibilityRole="button"
-        accessibilityLabel={title}
+        accessibilityLabel={accessibilityLabel || title}
         accessibilityState={{ expanded }}
-        accessibilityHint={`Double tap to ${expanded ? 'collapse' : 'expand'} section`}
+        accessibilityHint={accessibilityHint || currentAccessibilityHint}
         onPress={toggleExpand} 
         style={styles.header}
       >

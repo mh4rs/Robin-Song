@@ -12,7 +12,8 @@ import {
 import axios from 'axios';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
-import DropdownComponent from '../components/Dropdown';
+import Accordion from '../components/Accordion';
+import PickerComponent from '../components/Picker';
 import colors from '../assets/theme/colors';
 import { Platform } from 'react-native';
 import { API_BASE_URL } from "../../database/firebaseConfig";
@@ -157,12 +158,18 @@ const ForecastScreen: React.FC = () => {
             <Text accessibilityRole="header" style={styles.preferenceText}>Bird Preference</Text>
           </View>
           <View style={{ width: '100%' }}>
-            <DropdownComponent
-              data={birdOptions}
-              value={selectedValue}
-              onChange={(item) => setSelectedValue(String(item.value))}
-              placeholder="Select a species"
-            />
+            <Accordion
+              accessibilityLabel={`Current bird selection: ${selectedValue}`}
+              title={selectedValue} 
+              startIcon='bird'
+            >
+              <PickerComponent
+                data={birdOptions}
+                value={selectedValue}
+                onChange={(itemValue) => setSelectedValue(String(itemValue))}
+                showPlaceholder={false}
+              />
+            </Accordion>
           </View>
         </View>
 

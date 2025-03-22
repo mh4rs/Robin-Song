@@ -17,7 +17,7 @@ const SettingsScreen: React.FC = () => {
   const [error, setError] = useState('');
   const [locationEnabled, setLocationEnabled] = useState<boolean>(false);
   const [voiceCommandsEnabled, setVoiceCommandsEnabled] = useState<boolean>(false);
-  const userId = "FsDwDpHUD6XQU3egNNCOJLCTiNg1"; // Hardcoded user-id (needs to change with user sessions)
+  const userId = "FsDwDpHUD6XQU3egNNCOJLCTiNg1";
 
   useFocusEffect(
     React.useCallback(() => {

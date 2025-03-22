@@ -30,7 +30,7 @@ const TextFormField: React.FC<TextFormFieldProps> = ({
 
   return (
     <View style={[styles.container, style]}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label && <Text accessibilityRole="header" style={styles.label}>{label}</Text>}
       <View style={styles.inputContainer}>
         <TextInput
           style={[
