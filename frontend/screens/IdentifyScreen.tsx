@@ -51,29 +51,33 @@ const IdentifyScreen: React.FC = () => {
  const birdNameRef = useRef(null);
 
  useEffect(() => {
-   const fetchLastBird = async () => {
-     try {
-       const birdsRef = collection(db, "birds");
-       const q = query(birdsRef, orderBy("timestamp", "desc"), limit(1));
-       const querySnap = await getDocs(q);
-       if (!querySnap.empty) {
-         const doc = querySnap.docs[0];
-         const data = doc.data();
-         const docTimestamp = data.timestamp ? data.timestamp.toDate() : new Date();
-         setLatestBird({
-           bird: data.bird,
-           latitude: data.latitude || 0,
-           longitude: data.longitude || 0,
-           timestamp: docTimestamp,
-         });
-         await fetchBirdInfo(data.bird);
+     const fetchLastBirdFromServer = async () => {
+       try {
+         const { data } = await axios.get<BirdData[]>(
+           `${API_BASE_URL}/my-birds`,
+           { withCredentials: true } 
+         );
+         
+         if (data.length > 0) {
+           data.sort((a, b) =>
+             new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+           );
+           const last = data[0];
+           setLatestBird({
+             bird: last.bird,
+             latitude: last.latitude,
+             longitude: last.longitude,
+             timestamp: new Date(last.timestamp),
+           });
+           await fetchBirdInfo(last.bird);
+         }
+       } catch (err) {
+         console.error("Error fetching last bird from server:", err);
        }
-     } catch (err) {
-       console.error("Error fetching last bird from Firestore:", err);
-     }
-   };
-   fetchLastBird();
- }, []);
+     };
+     fetchLastBirdFromServer();
+   }, []);
+  
 
  useEffect(() => {
    const fetchInitialLocation = async () => {
@@ -169,7 +173,9 @@ const IdentifyScreen: React.FC = () => {
        const response = await axios.post<UploadResponse>(
          `${API_BASE_URL}/upload`,
          formData,
-         { headers: { "Content-Type": "multipart/form-data" } }
+         { headers: { "Content-Type": "multipart/form-data" }, 
+           withCredentials: true
+        }
        );
        if (isDetecting && response.data.birds?.length) {
          for (const bird of response.data.birds) {
@@ -289,12 +295,10 @@ const IdentifyScreen: React.FC = () => {
             Description
           </Text>
          <View style={styles.combinedContainer}>
-           {/* Main descriptive paragraph */}
            <Text style={styles.sectionText}>
              {birdInfo?.description || "No description available."}
            </Text>
 
-           {/* Example: Size */}
            {birdInfo?.size && (
             <View
               accessible={true}
@@ -306,7 +310,6 @@ const IdentifyScreen: React.FC = () => {
             </View>
            )}
 
-           {/* Example: Color */}
            {birdInfo?.color && (
             <View
               accessible={true}
@@ -319,7 +322,6 @@ const IdentifyScreen: React.FC = () => {
            )}
 
 
-           {/* Example: Wing Shape */}
            {birdInfo?.wing_shape && (
             <View
               accessible={true}
@@ -331,7 +333,6 @@ const IdentifyScreen: React.FC = () => {
             </View>
            )}
 
-           {/* Example: Tail Shape */}
            {birdInfo?.tail_shape && (
             <View
               accessible={true}
@@ -362,7 +363,6 @@ const IdentifyScreen: React.FC = () => {
        <View style={styles.separator} />
  <Text accessibilityRole="header" style={styles.sectionHeading}>Migration & Range</Text>
 
- {/* Migration text */}
  <Text style={styles.sectionText}>
    {birdInfo?.migration_text || "No migration info available."}
  </Text>

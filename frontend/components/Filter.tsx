@@ -222,12 +222,11 @@ const styles = StyleSheet.create({
   },
   filterButton: {
     backgroundColor: colors.accent,
-    paddingHorizontal: 10,
+    paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 50,
     flexDirection: "row",
     alignItems: "center",
-    alignSelf: "flex-end",
   },
   filterButtonText: {
     color: colors.white,
@@ -236,7 +235,7 @@ const styles = StyleSheet.create({
     fontFamily: "Radio Canada",
   },
   filterIcon: {
-    marginRight: 4,
+    marginRight: 8,
   },
   modal: {
     justifyContent: "center",

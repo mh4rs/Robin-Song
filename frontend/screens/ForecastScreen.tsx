@@ -17,6 +17,7 @@ import PickerComponent from '../components/Picker';
 import colors from '../assets/theme/colors';
 import { Platform } from 'react-native';
 import { API_BASE_URL } from "../../database/firebaseConfig";
+import { useUserData } from '../UserContext';
 
 interface HotspotResponse {
   location: string;
@@ -26,10 +27,6 @@ interface HotspotResponse {
 }
 
 const ForecastScreen: React.FC = () => {
-  // Hardcoded user-id (needs to change with user sessions)
-  const userId = "FsDwDpHUD6XQU3egNNCOJLCTiNg1";
-  const API_URL = `${API_BASE_URL}/get-hotspot`;
-
   const [selectedValue, setSelectedValue] = useState<string>('American Robin');
   const [hotspot, setHotspot] = useState<HotspotResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -38,6 +35,8 @@ const ForecastScreen: React.FC = () => {
   const [userWantsLocation, setUserWantsLocation] = useState<boolean>(false);
   const [hasPermission, setHasPermission] = useState<boolean>(false);
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const { userData } = useUserData(); 
+  const firstName = userData?.firstName || "Guest";
 
   const birdMapping: Record<string, string> = {
     "American Robin": "robin",
@@ -73,11 +72,15 @@ const ForecastScreen: React.FC = () => {
 
   const fetchUserPrefs = async () => {
     try {
-      const resp = await fetch(`${API_BASE_URL}/users/${userId}`);
+      const resp = await fetch(`${API_BASE_URL}/users/me`, {
+        credentials: 'include',
+      });
+
       if (!resp.ok) {
         console.error("Failed to fetch user doc in ForecastScreen");
         return;
       }
+
       const userData = await resp.json();
       const pref = Boolean(userData.locationPreferences);
       setUserWantsLocation(pref);
@@ -117,7 +120,10 @@ const ForecastScreen: React.FC = () => {
         params.lon = userCoords.longitude;
       }
 
-      const response = await axios.get<HotspotResponse>(API_URL, { params });
+      const response = await axios.get<HotspotResponse>(`${API_BASE_URL}/get-hotspot`, {
+        params,
+        withCredentials: true, 
+      });
       setHotspot(response.data);
     } catch (error) {
       console.error("API Error:", error);
@@ -173,7 +179,7 @@ const ForecastScreen: React.FC = () => {
           </View>
         </View>
 
-        <Text style={styles.greeting}>Hello, Jodi!</Text>
+        <Text style={styles.greeting}>Hello, {firstName}!</Text>
         <Text style={styles.description}>
           You are most likely to see <Text style={styles.highlight}>{selectedValue}</Text> at this location today:
         </Text>
@@ -211,6 +217,8 @@ const ForecastScreen: React.FC = () => {
     </SafeAreaView>
   );
 };
+
+export default ForecastScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -277,5 +285,3 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
 });
-
-export default ForecastScreen;
