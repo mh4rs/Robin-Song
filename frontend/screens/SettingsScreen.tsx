@@ -70,7 +70,11 @@ const SettingsScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Text accessibilityRole="header" style={styles.title}>Account</Text>
 
-        <View style={styles.accountCard}>
+        <View
+          accessible={true}
+          accessibilityLabel={`Your account information. Name: ${userData?.firstName} ${userData?.lastName}. Email address: ${userData?.email}`}
+          style={styles.accountCard}
+        >
           <View style={styles.leftSide}>
             <View style={styles.topRow}>
               <Image
@@ -96,7 +100,7 @@ const SettingsScreen: React.FC = () => {
         <Accordion title="Change Name" startIcon="account-edit-outline">
           <TextFormField
             label="Change First Name"
-            placeholder="Jodi"
+            placeholder={userData?.firstName}
             value={firstName}
             onChangeText={setFirstName}
             keyboardType="name-phone-pad"
@@ -104,7 +108,7 @@ const SettingsScreen: React.FC = () => {
           />
           <TextFormField
             label="Change Last Name"
-            placeholder="Joven"
+            placeholder={userData?.lastName}
             value={lastName}
             onChangeText={setLastName}
             keyboardType="name-phone-pad"
@@ -120,7 +124,7 @@ const SettingsScreen: React.FC = () => {
         <Accordion title="Change Email Address" startIcon="email-edit-outline">
           <TextFormField
             label="Change Email"
-            placeholder="jodijov@umich.edu"
+            placeholder={userData?.email}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"

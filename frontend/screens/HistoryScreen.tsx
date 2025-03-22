@@ -360,7 +360,11 @@ useEffect(() => {
       </View>
 
       <View style={styles.topButtons}>
-        <TouchableOpacity style={[styles.refreshButton, { width: '50%' }]} onPress={handleRefresh}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityHint="Double tap to refresh your bird history."
+          style={[styles.refreshButton, { width: '50%' }]} onPress={handleRefresh}
+        >
           <Text style={styles.refreshButtonText}>Refresh History</Text>
         </TouchableOpacity>
 

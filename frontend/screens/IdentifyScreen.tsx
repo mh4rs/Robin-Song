@@ -268,7 +268,10 @@ const IdentifyScreen: React.FC = () => {
        >
          {latestBird ? latestBird.bird : "No Bird Found Yet"}
        </Text>
-       <Text style={styles.speciesLatin}>
+       <Text
+        accessibilityLabel={`Scientific name: ${birdInfo?.scientific_name}`}
+        style={styles.speciesLatin}
+       >
          {birdInfo?.scientific_name || ""}
        </Text>
 
