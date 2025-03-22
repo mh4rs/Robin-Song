@@ -342,14 +342,17 @@ useEffect(() => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.searchContainer}>
-        <View style={{ width: '75%' }}>
+        <View style={{ width: '100%' }}>
           <SearchBar label="Search..." search={search} setSearch={setSearch} onSearch={handleSearch} />
         </View>
-        <Filter speciesList={uniqueSpeciesList} onFilterChange={handleFilterChange} />
+      </View>
 
-        <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
-        <Text style={styles.refreshButtonText}>Refresh</Text>
-       </TouchableOpacity>
+      <View style={styles.topButtons}>
+        <TouchableOpacity style={[styles.refreshButton, { width: '50%' }]} onPress={handleRefresh}>
+          <Text style={styles.refreshButtonText}>Refresh History</Text>
+        </TouchableOpacity>
+
+        <Filter speciesList={uniqueSpeciesList} onFilterChange={handleFilterChange} />
       </View>
 
       {/* Bird List */}
@@ -397,6 +400,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginVertical: 8, 
     marginHorizontal: 12,
+  },
+  topButtons: {
+    marginHorizontal: 12,
+    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between'
   },
   monthHeader: {
     fontSize: 24,
@@ -455,18 +464,20 @@ const styles = StyleSheet.create({
     fontWeight: "bold", 
     marginBottom: 2 
   },
-   refreshButton: {
-       marginLeft: 8,
-       paddingHorizontal: 10,
-       paddingVertical: 6,
-       backgroundColor: colors.accent,
-       borderRadius: 6
-     },
-     refreshButtonText: {
-       color: 'white',
-       fontSize: 16,
-       fontWeight: 'bold'
-     },
+  refreshButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    backgroundColor: colors.primary,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  refreshButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    fontFamily: 'Radio Canada',
+  },
   entryHour: { 
     fontSize: 14,
     fontFamily: 'Radio Canada',

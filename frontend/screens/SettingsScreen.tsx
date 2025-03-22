@@ -76,7 +76,6 @@ const SettingsScreen: React.FC = () => {
               <Image source={require("../assets/img/robin.png")} style={styles.image} />
             </View>
             <Text style={styles.label}>Email</Text>
-            <Text style={styles.label}>Location</Text>
           </View>
           <View>
             <View style={styles.topRow}>
@@ -85,7 +84,6 @@ const SettingsScreen: React.FC = () => {
               </Text>
             </View>
             <Text style={styles.infoText}>{userData?.email ?? ''}</Text>
-            <Text style={styles.infoText}>Dearborn, Michigan</Text>
           </View>
         </View>
 
