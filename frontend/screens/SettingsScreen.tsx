@@ -75,15 +75,14 @@ const SettingsScreen: React.FC = () => {
             <View style={styles.topRow}>
               <Image source={require("../assets/img/robin.png")} style={styles.image} />
             </View>
-            <Text style={styles.label}>Email</Text>
           </View>
           <View>
             <View style={styles.topRow}>
               <Text style={styles.name}>
                 {userData?.firstName ?? ''} {userData?.lastName ?? ''}
               </Text>
+              <Text style={styles.infoText}>{userData?.email ?? ''}</Text>
             </View>
-            <Text style={styles.infoText}>{userData?.email ?? ''}</Text>
           </View>
         </View>
 
@@ -240,12 +239,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Radio Canada',
     color: colors.text,
-    marginBottom: 5,
   },
   image: {
     width: 65,
     height: 65,
-    marginBottom: 10,
     borderRadius: 50,
   },
   buttonContainer: {
