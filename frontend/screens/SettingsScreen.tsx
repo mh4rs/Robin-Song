@@ -21,7 +21,7 @@ const SettingsScreen: React.FC = () => {
   const [locationEnabled, setLocationEnabled] = useState<boolean>(false);
   const [voiceCommandsEnabled, setVoiceCommandsEnabled] = useState<boolean>(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const { userData } = useUserData();
+  const { userData, setUserData } = useUserData();
   const [profilePicture, setProfilePicture] = useState<string>(''); 
 
 
@@ -167,25 +167,35 @@ const SettingsScreen: React.FC = () => {
             keyboardType="name-phone-pad"
             autoCapitalize="none"
           />
-          <Button
-            title="Submit"
-            variant="primary"
-            onPress={async () => {
-              try {
-                const resp = await fetch(`${API_BASE_URL}/users/${userId}`, {
-                  method: 'PATCH',
-                  credentials: 'include',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ firstName, lastName }),
-                });
-                if (!resp.ok) throw new Error('Failed to update name');
-                Alert.alert('Success', 'Name updated!');
-              } catch (error) {
-                  Alert.alert('Error', (error as Error).message);
-                }
-                
-            }}
-          />
+        <Button
+          title="Submit"
+          variant="primary"
+          onPress={async () => {
+            try {
+              const resp = await fetch(`${API_BASE_URL}/users/${userId}`, {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ firstName, lastName }),
+              });
+
+              if (!resp.ok) throw new Error('Failed to update name');
+
+              const userResp = await fetch(`${API_BASE_URL}/users/me`, {
+                credentials: 'include',
+              });
+
+              if (!userResp.ok) throw new Error('Failed to refresh user data');
+
+              const updatedUser = await userResp.json();
+              setUserData(updatedUser); 
+
+              Alert.alert('Success', 'Name updated!');
+            } catch (error) {
+              Alert.alert('Error', (error as Error).message);
+            }
+          }}
+        />
 
         </Accordion>
 
