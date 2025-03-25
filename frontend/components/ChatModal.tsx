@@ -361,7 +361,7 @@ const handleSendMessage = async () => {
                   <TouchableOpacity
                     accessibilityLabel="Close"
                     accessibilityRole="button"
-                    accessibilityHint="Double tap to close the ChatGPT screen. Continue forward to continue the conversation."
+                    accessibilityHint="Double tap to close the Robin chatbot screen. Continue forward to continue the conversation."
                     style={styles.closeButton} 
                     onPress={onClose}
                   >
@@ -453,7 +453,7 @@ const handleSendMessage = async () => {
                   <View style={styles.inputContainer}>
                     <TextInput
                       accessibilityLabel="Text input field"
-                      accessibilityHint="Enter a message to send to Robin."
+                      accessibilityHint="Enter a message to send to the Robin chatbot."
                       style={[styles.inputField, { minHeight: 25, maxHeight: 120 }]}
                       placeholder="Ask me about birds..."
                       placeholderTextColor={colors.accent}
@@ -555,7 +555,7 @@ const ChatListScreen: React.FC<{
       <View style={styles.chatListTopBar}>
         <TouchableOpacity
           accessibilityLabel='Back arrow button'
-          accessibilityHint='Double tap to go back to the chat home screen. Continue forward to view your chat history.'
+          accessibilityHint='Double tap to go back to the Robin chatbot home screen. Continue forward to view your chat history.'
           onPress={onClose}
         >
           <MaterialCommunityIcons name="chevron-left" size={30} color={colors.primary} />
