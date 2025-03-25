@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Image, SafeAreaView, ScrollView, Text, StyleSheet, View, Alert } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import colors from '../assets/theme/colors';
-import Card from '../components/Card';
 import Accordion from '../components/Accordion';
 import TextFormField from '../components/TextForm';
 import Button from '../components/Button';
@@ -130,13 +129,22 @@ const SettingsScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-<ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <Text accessibilityRole="header" style={styles.title}>Account</Text>
 
-        <Text style={styles.title}>Account</Text>
-        <View style={styles.accountCard}>
+        <View
+          accessible={true}
+          accessibilityLabel={`Your account information. Name: ${userData?.firstName} ${userData?.lastName}. Email address: ${userData?.email}`}
+          style={styles.accountCard}
+        >
           <View style={styles.leftSide}>
             <View style={styles.topRow}>
-            <Image source={getImageSource(profilePicture)} style={styles.image} />
+              <Image
+                accessible={true}
+                accessibilityLabel='Account Profile Picture'
+                source={getImageSource(profilePicture)}
+                style={styles.image}
+              />
             </View>
           </View>
           <View>
@@ -149,7 +157,8 @@ const SettingsScreen: React.FC = () => {
           </View>
         </View>
 
-        <Text style={styles.title}>Settings</Text>
+        <Text accessibilityRole="header" style={styles.title}>Settings</Text>
+        
         <Accordion title="Change Name" startIcon="account-edit-outline">
           <TextFormField
             label="Change First Name"
@@ -201,7 +210,7 @@ const SettingsScreen: React.FC = () => {
 
         <Accordion title="Change Email Address" startIcon="email-edit-outline">
           <TextFormField
-            label="New Email"
+            label="Change Email"
             placeholder="example@gmail.com"
             value={email}
             onChangeText={setEmail}
@@ -273,7 +282,7 @@ const SettingsScreen: React.FC = () => {
         />
 
         <Toggle
-          title="Enable Location for Predictions"
+          title="Enable Location for Forecast"
           startIcon="map-marker-outline"
           value={locationEnabled}
           onToggle={async (newValue) => {
