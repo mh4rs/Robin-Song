@@ -121,7 +121,7 @@ const SettingsScreen: React.FC = () => {
         setUserData(null);
         navigation.reset({
           index: 0,
-          routes: [{ name: "Login" }],
+          routes: [{ name: "Home" }],
         });
       } else {
         console.error("Failed to log out");
@@ -343,7 +343,7 @@ const SettingsScreen: React.FC = () => {
               setUserData(null);
               navigation.reset({
                 index: 0,
-                routes: [{ name: "Login" }],
+                routes: [{ name: "Home" }],
               });
             } catch (error) {
               Alert.alert("Error", (error as Error).message);

@@ -17,7 +17,7 @@ export default function RootLayout() {
   return (
     <NavigationContainer>
       <CurrentScreenProvider>
-        <Stack.Navigator initialRouteName={userData ? "Tabs" : "Login"}>
+        <Stack.Navigator initialRouteName={userData ? "Tabs" : "Home"}>
           {userData ? (
             <Stack.Screen 
               name="Tabs" 
