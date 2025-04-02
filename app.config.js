@@ -41,7 +41,7 @@ module.exports = {
         {
           backgroundColor: "#ECA08D",
           image: "./frontend/assets/img/logos/splash-icon.png",
-          "imageWidth": 200
+          "imageWidth": 150
         }
       ],
       [
