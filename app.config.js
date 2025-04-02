@@ -63,6 +63,12 @@ module.exports = {
         {
           "locationAlwaysAndWhenInUsePermission": "Allow Robin to use your location."
         }
+      ],
+      [
+        "expo-maps",
+        {
+          "googleMapsApiKey": process.env.GOOGLE_MAPS_API_KEY
+        }
       ]
     ],
     extra: {
