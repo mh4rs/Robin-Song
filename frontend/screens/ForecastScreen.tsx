@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     height: 250,
-    borderRadius: 10,
+    borderRadius: 20,
     margin: 10,
   },
   map: {
@@ -297,6 +297,7 @@ const styles = StyleSheet.create({
       marginTop: 10,
     },
   noDataText: {
+    fontFamily: 'Radio Canada',
     textAlign: 'center',
     fontSize: 18,
     color: 'red',

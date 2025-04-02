@@ -1,6 +1,6 @@
 module.exports = {
   expo: {
-    name: "robin-song",
+    name: "Robin",
     owner: "robin-song",
     slug: "robin-song",
     scheme: "robinsong",
@@ -77,7 +77,6 @@ module.exports = {
       EXPO_PUBLIC_FIREBASE_APP_ID: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
       EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID,
       EXPO_PUBLIC_FIREBASE_WEB_CLIENT_ID: process.env.EXPO_PUBLIC_FIREBASE_WEB_CLIENT_ID,
-      EXPO_PUBLIC_UNSPLASH_ACCESS_KEY: process.env.EXPO_PUBLIC_UNSPLASH_ACCESS_KEY,
       EXPO_PUBLIC_SERVER_BASE_URL: process.env.EXPO_PUBLIC_SERVER_BASE_URL
     }
   }
