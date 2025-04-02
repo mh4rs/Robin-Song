@@ -6,6 +6,7 @@ module.exports = {
     scheme: "robinsong",
     orientation: "portrait",
     icon: "./frontend/assets/img/logos/robinAppIcon.png",
+    newArchEnabled: false,
     android: {
       jsEngine: "hermes",
       package: "com.robinsong.robinsong",
@@ -39,7 +40,8 @@ module.exports = {
         "expo-splash-screen",
         {
           backgroundColor: "#ECA08D",
-          image: "./frontend/assets/img/logos/robinAppIcon.png"
+          image: "./frontend/assets/img/logos/splash-icon.png",
+          "imageWidth": 200
         }
       ],
       [
