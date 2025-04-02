@@ -189,13 +189,6 @@ export default function LoginScreen() {
 
         <OrDivider />
 
-        <Button
-          title="Sign in with Google"
-          onPress={handleGoogleSignIn}
-          variant="card"
-          icon={<MaterialCommunityIcons name="google" size={25} color={colors.accent} />}
-        />
-
         <View style={styles.noAccountLayout}>
           <Text style={styles.noAccountText}>
             Don't have an account?

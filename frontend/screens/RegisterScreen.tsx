@@ -189,13 +189,6 @@ export default function RegisterScreen() {
 
         <OrDivider />
 
-        <Button
-          title="Continue with Google"
-          onPress={handleGoogleSignIn}
-          variant="card"
-          icon={<MaterialCommunityIcons name="google" size={25} color={colors.accent} />}
-        />
-
         <View style={styles.accountLayout}>
           <Text style={styles.accountText}>
             Have an account?
