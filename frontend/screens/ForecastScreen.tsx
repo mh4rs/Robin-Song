@@ -38,6 +38,8 @@ const ForecastScreen: React.FC = () => {
   const { userData } = useUserData(); 
   const firstName = userData?.firstName || "Guest";
 
+  const PlatformMap = Platform.OS === 'ios' ? AppleMaps.View : GoogleMaps.View;
+
   const birdMapping: Record<string, string> = {
     "American Robin": "robin",
     "Blue Jay": "blue-jays",
@@ -203,30 +205,22 @@ const ForecastScreen: React.FC = () => {
               style={styles.mapContainer}
             >
               <Text style={styles.locationName}>{hotspot.location}</Text>
-              {Platform.OS === 'ios' ? (
-                <AppleMaps.View 
-                  style={styles.map}
-                  cameraPosition={{
-                    coordinates: { latitude, longitude },
-                    zoom: 14,
-                  }}
-                  onMapClick={openMaps}
-                  markers={[{ coordinates: { latitude, longitude } }]}
-                >
-                </AppleMaps.View>
-              ) : Platform.OS === 'android' ? (
-                <GoogleMaps.View 
-                  style={styles.map}
-                  cameraPosition={{
-                    coordinates: { latitude, longitude },
-                  }}
-                  onMapClick={openMaps}
-                  markers={[{ coordinates: { latitude, longitude } }]}
-                >
-                </GoogleMaps.View>
-              ) : (
-                <Text>Maps are only available on Android and iOS</Text>
-              )}
+              <PlatformMap
+                style={styles.map}
+                cameraPosition={{
+                  coordinates: {
+                    latitude: hotspot.lat,
+                    longitude: hotspot.lon,
+                  },
+                  zoom: 12,
+                }}
+                onMapClick={() => {
+                  const url = Platform.OS === 'ios'
+                    ? `http://maps.apple.com/?ll=${hotspot.lat},${hotspot.lon}`
+                    : `https://www.google.com/maps/search/?api=1&query=${hotspot.lat},${hotspot.lon};`
+                  Linking.openURL(url);
+                }}
+              />
             </View>
           </>
         ) : (
