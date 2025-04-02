@@ -10,7 +10,7 @@ import {
   RefreshControl 
 } from 'react-native';
 import axios from 'axios';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { AppleMaps, GoogleMaps } from 'expo-maps';
 import * as Location from 'expo-location';
 import Accordion from '../components/Accordion';
 import PickerComponent from '../components/Picker';
@@ -37,6 +37,8 @@ const ForecastScreen: React.FC = () => {
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const { userData } = useUserData(); 
   const firstName = userData?.firstName || "Guest";
+
+  const PlatformMap = Platform.OS === 'ios' ? AppleMaps.View : GoogleMaps.View;
 
   const birdMapping: Record<string, string> = {
     "American Robin": "robin",
@@ -148,6 +150,14 @@ const ForecastScreen: React.FC = () => {
     setRefreshing(false);
   };
 
+  const latitude = hotspot?.lat ?? 43.0125;
+  const longitude = hotspot?.lon ?? -83.6875;
+
+  const openMaps = () => {
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+    Linking.openURL(mapsUrl);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView 
@@ -192,20 +202,23 @@ const ForecastScreen: React.FC = () => {
               accessible={true}
               accessibilityRole="summary"
               accessibilityLabel={`${hotspot.location}. Double tap to open an external map for this location.`}
+              style={styles.mapContainer}
             >
               <Text style={styles.locationName}>{hotspot.location}</Text>
-              <MapView
-                provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+              <PlatformMap
                 style={styles.map}
-                initialRegion={{
-                  latitude: userCoords?.latitude ?? hotspot?.lat ?? 43.0125,
-                  longitude: userCoords?.longitude ?? hotspot?.lon ?? -83.6875,
-                  latitudeDelta: 0.05,
-                  longitudeDelta: 0.05,
+                cameraPosition={{
+                  coordinates: {
+                    latitude: hotspot.lat,
+                    longitude: hotspot.lon,
+                  },
+                  zoom: 12,
                 }}
-                onPress={() => {
-                  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${hotspot.lat},${hotspot.lon}`;
-                  Linking.openURL(mapsUrl);
+                onMapClick={() => {
+                  const url = Platform.OS === 'ios'
+                    ? `http://maps.apple.com/?ll=${hotspot.lat},${hotspot.lon}`
+                    : `https://www.google.com/maps/search/?api=1&query=${hotspot.lat},${hotspot.lon};`
+                  Linking.openURL(url);
                 }}
               />
             </View>
@@ -267,18 +280,24 @@ const styles = StyleSheet.create({
   },
   locationName: {
     fontFamily: 'Caprasimo',
-    fontSize: 40,
+    fontSize: 32,
     color: colors.secondary,
     textAlign: 'center',
     marginBottom: 12,
   },
+  mapContainer: {
+    height: 250,
+    borderRadius: 20,
+    margin: 10,
+  },
   map: {
       width: '100%',
-      height: 320,
+      height: 250,
       borderRadius: 20,
       marginTop: 10,
     },
   noDataText: {
+    fontFamily: 'Radio Canada',
     textAlign: 'center',
     fontSize: 18,
     color: 'red',

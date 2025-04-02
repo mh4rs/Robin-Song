@@ -13,3 +13,5 @@ backend/secrets/
 .expo/settings.json
 google-services/
 flask_session/
+android/
+ios/
