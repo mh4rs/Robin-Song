@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react'; 
 import { View, Text, Image, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { getAuth, signInWithPopup} from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import colors from '../assets/theme/colors';
 import TextFormField from '../components/TextForm';
 import Button from '../components/Button';
-import OrDivider from '../components/OrDivider';
 import NavLink from '../components/NavLink';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import * as AuthSession from 'expo-auth-session';
 import { loginUser } from '../auth/authService';
 import ErrorMessage from "../components/ErrorMessage";
 import SuccessMessage from "../components/SuccessMessage";
@@ -19,7 +16,7 @@ import { makeRedirectUri } from "expo-auth-session";
 import { GoogleAuthProvider } from "firebase/auth";
 import { signInWithCredential } from "firebase/auth";
 import { useUserData } from '../UserContext'; 
-import { db, API_BASE_URL } from '../../database/firebaseConfig';
+import { API_BASE_URL } from '../../database/firebaseConfig';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -186,8 +183,6 @@ export default function LoginScreen() {
           style={styles.form}
           textStyle={{fontSize: 20}}
         />
-
-        <OrDivider />
 
         <View style={styles.noAccountLayout}>
           <Text style={styles.noAccountText}>
