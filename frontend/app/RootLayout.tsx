@@ -16,8 +16,7 @@ export default function RootLayout() {
   const { userData } = useUserData();
 
   return (
-    <PreferencesProvider>
-      <NavigationContainer ref={navigationRef}>
+      <NavigationContainer>
         <CurrentScreenProvider>
           <Stack.Navigator initialRouteName={userData ? "Tabs" : "Home"}>
             {userData ? (
@@ -50,11 +49,8 @@ export default function RootLayout() {
               component={PrivacyPolicyScreen}
               options={{ headerTitle: 'Privacy Policy' }}
             />
-            <Stack.Screen name="VoiceTester" component={VoiceTester} />
           </Stack.Navigator>
-          <VoiceCommandManager />
         </CurrentScreenProvider>
       </NavigationContainer>
-    </PreferencesProvider>
   );
 }
